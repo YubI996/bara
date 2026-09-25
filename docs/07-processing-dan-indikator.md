@@ -12,49 +12,81 @@
 
 ```json
 {
-  "source": { "entity": "satudata.dataset", "alias": "d" },
-  "parameters": [ { "name": "year", "type": "integer", "required": true } ],
-  "steps": [
-    { "op": "filter", "where": { "all": [
-        { "field": "d.year", "cmp": "=", "value": { "param": "year" } }
-    ]}},
-    { "op": "join", "relationship": "d.producer_org", "alias": "opd", "kind": "inner" },
-    { "op": "group", "by": [ { "expr": "opd.id", "as": "opd" } ] },
-    { "op": "aggregate", "measures": [
-        { "as": "registered", "fn": "count" },
-        { "as": "published",  "fn": "count",
-          "where": { "field": "d._state", "cmp": "=", "value": "published" } }
-    ]},
-    { "op": "formula", "as": "publication_rate",
-      "expr": "round(safe_div(published, registered) * 100, 2)" },
-    { "op": "classify", "field": "publication_rate", "as": "category", "bins": [
-        { "lt": 50, "label": "rendah" },
-        { "lt": 80, "label": "sedang" },
-        { "label": "tinggi" }
-    ]},
-    { "op": "sort", "by": [ { "field": "publication_rate", "dir": "desc" } ] }
-  ],
-  "output": [ "opd", "registered", "published", "publication_rate", "category" ]
+    "source": { "entity": "satudata.dataset", "alias": "d" },
+    "parameters": [{ "name": "year", "type": "integer", "required": true }],
+    "steps": [
+        {
+            "op": "filter",
+            "where": {
+                "all": [
+                    {
+                        "field": "d.year",
+                        "cmp": "=",
+                        "value": { "param": "year" }
+                    }
+                ]
+            }
+        },
+        {
+            "op": "join",
+            "relationship": "d.producer_org",
+            "alias": "opd",
+            "kind": "inner"
+        },
+        { "op": "group", "by": [{ "expr": "opd.id", "as": "opd" }] },
+        {
+            "op": "aggregate",
+            "measures": [
+                { "as": "registered", "fn": "count" },
+                {
+                    "as": "published",
+                    "fn": "count",
+                    "where": {
+                        "field": "d._state",
+                        "cmp": "=",
+                        "value": "published"
+                    }
+                }
+            ]
+        },
+        {
+            "op": "formula",
+            "as": "publication_rate",
+            "expr": "round(safe_div(published, registered) * 100, 2)"
+        },
+        {
+            "op": "classify",
+            "field": "publication_rate",
+            "as": "category",
+            "bins": [
+                { "lt": 50, "label": "rendah" },
+                { "lt": 80, "label": "sedang" },
+                { "label": "tinggi" }
+            ]
+        },
+        { "op": "sort", "by": [{ "field": "publication_rate", "dir": "desc" }] }
+    ],
+    "output": ["opd", "registered", "published", "publication_rate", "category"]
 }
 ```
 
 ### 2.2 Step yang didukung
 
-| Step | Fungsi | Hasil SQL |
-|---|---|---|
-| `filter` | kondisi `all`/`any`/`not`, cmp `= != < <= > >= in not_in between is_null like` | `WHERE` (atau `HAVING` jika setelah `aggregate`) |
-| `select` | pilih/ubah nama kolom, ekspresi per baris | `SELECT expr AS alias` |
-| `join` | ikuti **relationship yang terdefinisi** (bukan kolom bebas) | `JOIN record_links + records/core` |
-| `group` | dimensi | `GROUP BY` |
-| `aggregate` | `count`, `count_distinct`, `sum`, `avg`, `min`, `max`, + `where` (FILTER) | `count(*) FILTER (WHERE ...)` |
-| `formula` | ekspresi (§3) di atas kolom yang tersedia | `SELECT expr` di CTE berikutnya |
-| `condition` | `case` bertingkat | `CASE WHEN ... END` |
-| `classify` | binning ke label | `CASE` |
-| `stat` | `median`, `percentile(p)`, `stddev`, `variance`, `mode` | `percentile_cont(p) WITHIN GROUP`, `stddev_samp` |
-| `window` | `rank`, `row_number`, `share_of_total`, `running_sum`, `lag` | window function |
-| `sort`, `limit` | urut & batasi | `ORDER BY`, `LIMIT` |
-| `union` | gabungkan output process lain dengan skema sama | `UNION ALL` |
-| `use_process` | pakai output process lain sebagai source (reuse) | CTE bersarang, maksimal kedalaman 3 |
+| Step            | Fungsi                                                                         | Hasil SQL                                        |
+| --------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
+| `filter`        | kondisi `all`/`any`/`not`, cmp `= != < <= > >= in not_in between is_null like` | `WHERE` (atau `HAVING` jika setelah `aggregate`) |
+| `select`        | pilih/ubah nama kolom, ekspresi per baris                                      | `SELECT expr AS alias`                           |
+| `join`          | ikuti **relationship yang terdefinisi** (bukan kolom bebas)                    | `JOIN record_links + records/core`               |
+| `group`         | dimensi                                                                        | `GROUP BY`                                       |
+| `aggregate`     | `count`, `count_distinct`, `sum`, `avg`, `min`, `max`, + `where` (FILTER)      | `count(*) FILTER (WHERE ...)`                    |
+| `formula`       | ekspresi (§3) di atas kolom yang tersedia                                      | `SELECT expr` di CTE berikutnya                  |
+| `condition`     | `case` bertingkat                                                              | `CASE WHEN ... END`                              |
+| `classify`      | binning ke label                                                               | `CASE`                                           |
+| `stat`          | `median`, `percentile(p)`, `stddev`, `variance`, `mode`                        | `percentile_cont(p) WITHIN GROUP`, `stddev_samp` |
+| `window`        | `rank`, `row_number`, `share_of_total`, `running_sum`, `lag`                   | window function                                  |
+| `sort`, `limit` | urut & batasi                                                                  | `ORDER BY`, `LIMIT`                              |
+| `union`         | gabungkan output process lain dengan skema sama                                | `UNION ALL`                                      |
+| `use_process`   | pakai output process lain sebagai source (reuse)                               | CTE bersarang, maksimal kedalaman 3              |
 
 Field virtual yang tersedia di setiap source: `_id`, `_created_at`, `_updated_at`, `_owner_org`, `_state` (workflow), `_entity_version`.
 
@@ -99,16 +131,16 @@ Fungsi whitelist: `round(x, n)`, `floor`, `ceil`, `abs`, `coalesce(a, b, ...)`, 
 - **Tidak memakai `eval`, `symfony/expression-language`, atau string SQL gabungan.** Alasannya: expression-language mengevaluasi PHP dan terlalu permisif (akses method objek), sedangkan kita butuh keluaran SQL yang terjamin aman.
 - Literal string/angka dikirim sebagai binding. Identifier hanya boleh berasal dari daftar kolom step sebelumnya.
 - Batas: panjang ekspresi ≤ 2.000 karakter, kedalaman AST ≤ 32.
-- Tes wajib: *property-based test* bahwa hasil `SqlEmitter` = hasil `PhpEvaluator` untuk input acak.
+- Tes wajib: _property-based test_ bahwa hasil `SqlEmitter` = hasil `PhpEvaluator` untuk input acak.
 
 ## 4. Eksekusi & batas sumber daya
 
-| Mode | Pemicu | Timeout | Batas output |
-|---|---|---|---|
-| Preview (editor) | admin | 10 dtk | 500 baris |
-| Snapshot indikator | schedule / event | 5 mnt | tanpa batas (disimpan) |
-| Data product (on-demand) | API | 15 dtk | paginasi, 10.000 per halaman |
-| Export | user | 10 mnt (job) | chunk 5.000 |
+| Mode                     | Pemicu           | Timeout      | Batas output                 |
+| ------------------------ | ---------------- | ------------ | ---------------------------- |
+| Preview (editor)         | admin            | 10 dtk       | 500 baris                    |
+| Snapshot indikator       | schedule / event | 5 mnt        | tanpa batas (disimpan)       |
+| Data product (on-demand) | API              | 15 dtk       | paginasi, 10.000 per halaman |
+| Export                   | user             | 10 mnt (job) | chunk 5.000                  |
 
 Run dijalankan di queue `processing` dengan jumlah worker terbatas (mis. 2), supaya tidak mengganggu queue `default`.
 
@@ -127,12 +159,12 @@ numerator: published
 denominator: registered
 dimension_columns: [opd]
 period_grain: year
-unit: "%"
+unit: '%'
 decimals: 2
 direction: higher_better
 definition_text: >
-  Jumlah dataset berstatus published dibagi jumlah dataset terdaftar
-  pada tahun berjalan, dikali 100.
+    Jumlah dataset berstatus published dibagi jumlah dataset terdaftar
+    pada tahun berjalan, dikali 100.
 ```
 
 ### 5.2 Snapshot & lineage
@@ -161,6 +193,7 @@ event record.updated (entity sumber process X)
 ## 6. Kaitan dengan dokumen sumber
 
 Urutan konseptual dari rencana awal (Validation → Normalization → Filter → Join → Group → Aggregate → Calculate → Condition → Classification → Statistical Analysis → Indicator) dipetakan sebagai berikut:
+
 - Validation & Normalization terjadi **saat input** (FieldType::cast), bukan saat processing, supaya data sumber sudah bersih.
 - Filter … Classification → step DSL.
 - Statistical Analysis dasar → step `stat`/`window`. Statistik lanjutan dan forecasting → M14 (Python worker membaca output process via API internal).

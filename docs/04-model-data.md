@@ -1,11 +1,20 @@
 # 04 — Model Data
 
 Konvensi:
+
 - PK `id uuid DEFAULT uuidv7()`, kecuali disebut lain. UUIDv7 berurutan waktu, sehingga index B-tree tetap rapat ([ADR 0005](adr/0005-object-registry-uuidv7.md)).
 - Semua timestamp `timestamptz`. Zona tampilan: `Asia/Jakarta` / `Asia/Makassar` / `Asia/Jayapura` sesuai Pemda.
 - `code` = kode stabil yang dibaca manusia, `UNIQUE` dalam lingkupnya, pola `^[a-z][a-z0-9_]{1,62}$` untuk metadata.
-- Soft delete (`deleted_at`) hanya untuk data bisnis. Metadata yang sudah dipublikasikan tidak dihapus, hanya di-*archive*.
+- Soft delete (`deleted_at`) hanya untuk data bisnis. Metadata yang sudah dipublikasikan tidak dihapus, hanya di-_archive_.
 - Semua FK memakai `ON DELETE RESTRICT`, kecuali disebut lain.
+
+## Status implementasi
+
+| Bagian                                                                                                                                                                                           | Status                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §2 objects, §3 applications & entities (tanpa kolom versi), §5 core_organizations (tanpa region_id), §6 users/roles/permissions/role_assignments, §9 outbox_events, processed_events, audit_logs | **Sudah (M0)**. Lihat `database/migrations/{platform,identity,access,audit,eventing}`                                                                                |
+| audit_logs                                                                                                                                                                                       | Trigger `audit_logs_append_only` menolak UPDATE/DELETE. Partisi bulan berjalan + 3 bulan dibuat oleh migration, berikutnya oleh `bara:audit-partitions` (terjadwal). |
+| Sisanya                                                                                                                                                                                          | Sesuai milestone di doc 12                                                                                                                                           |
 
 ## 1. Gambaran besar
 
@@ -62,7 +71,7 @@ CREATE INDEX objects_owner_path_gist ON objects USING gist (owner_path);
 CREATE INDEX objects_entity_idx ON objects (entity_id) WHERE deleted_at IS NULL;
 ```
 
-**Kenapa perlu tabel ini:** relasi bisa menunjuk ke record JSONB *atau* ke baris Core fisik. Karena setiap objek punya baris di `objects`, `record_links.target_id` cukup satu FK ke `objects.id`, dan integritas referensial dijaga database, bukan kode. Tabel ini juga menjadi titik tunggal untuk scope akses, audit, workflow, dan event.
+**Kenapa perlu tabel ini:** relasi bisa menunjuk ke record JSONB _atau_ ke baris Core fisik. Karena setiap objek punya baris di `objects`, `record_links.target_id` cukup satu FK ke `objects.id`, dan integritas referensial dijaga database, bukan kode. Tabel ini juga menjadi titik tunggal untuk scope akses, audit, workflow, dan event.
 
 Pola: **class-table inheritance**. `records.id` dan `core_*.id` adalah PK sekaligus FK ke `objects.id`.
 
@@ -247,7 +256,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS rf_<hash8>
     WHERE entity_id = '<entity_uuid>' AND deleted_at IS NULL;
 ```
 
-- Nama index di-*hash* dari `(entity_id, field_key)`. Tidak ada identifier dari input pengguna.
+- Nama index di-_hash_ dari `(entity_id, field_key)`. Tidak ada identifier dari input pengguna.
 - Cast memakai fungsi `IMMUTABLE` bawaan (`::int`, `::numeric`, `::date`). Untuk `date` dipakai helper `bara_to_date(text)` yang dideklarasikan `IMMUTABLE`, karena `::date` pada text bergantung setting `DateStyle`.
 - Maksimal 8 index per entity (dikonfigurasi). Kalau lebih dari itu, pertimbangkan promosi ke tabel fisik.
 - `is_unique` memakai `CREATE UNIQUE INDEX` serupa.
@@ -344,23 +353,28 @@ CREATE TABLE codelist_items (
 );
 ```
 
-**Catatan UU PDP:** NIK tidak pernah disimpan plaintext. Dedup memakai HMAC dengan *pepper* yang disimpan di secret manager/env, bukan di DB. Tampilan NIK memerlukan clearance `personal` dan dicatat di audit (`pii.revealed`).
+**Catatan UU PDP:** NIK tidak pernah disimpan plaintext. Dedup memakai HMAC dengan _pepper_ yang disimpan di secret manager/env, bukan di DB. Tampilan NIK memerlukan clearance `personal` dan dicatat di audit (`pii.revealed`).
 
 ## 6. Identity & Access
 
 ```sql
 CREATE TABLE users (
     id              uuid PRIMARY KEY DEFAULT uuidv7(),
-    person_id       uuid REFERENCES core_persons(id),
+    person_id       uuid REFERENCES core_persons(id),   -- ditambahkan di M4 bersama core_persons
+    name            text NOT NULL,
     email           citext NOT NULL UNIQUE,
+    email_verified_at timestamptz,
     password        text,                       -- NULL jika hanya SSO
     kind            text NOT NULL CHECK (kind IN ('internal','external','service')),
     primary_org_id  uuid NOT NULL REFERENCES core_organizations(id),
-    two_factor_secret text,                     -- terenkripsi
     is_active       boolean NOT NULL DEFAULT true,
     last_login_at   timestamptz,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now()
+    two_factor_secret text,                     -- terenkripsi (Fortify)
+    two_factor_recovery_codes text,             -- terenkripsi (Fortify)
+    two_factor_confirmed_at timestamptz,
+    remember_token  varchar(100),
+    created_at timestamptz,
+    updated_at timestamptz
 );
 
 CREATE TABLE roles (
@@ -407,7 +421,7 @@ CREATE TABLE api_clients (
 );
 ```
 
-Permission untuk entity di-*generate* saat entity dipublikasikan: `{app}.{entity}.{view|create|update|delete|export}` ditambah satu permission per action workflow.
+Permission untuk entity di-_generate_ saat entity dipublikasikan: `{app}.{entity}.{view|create|update|delete|export}` ditambah satu permission per action workflow.
 
 ## 7. Workflow
 
@@ -586,10 +600,11 @@ CREATE TABLE audit_logs (
     object_id   uuid,
     object_type text,
     changes     jsonb,                     -- {field: [old, new]}; field personal di-mask
+    context     jsonb,                     -- data tambahan non-PII (mis. jenis perubahan 2FA)
     ip          inet,
     user_agent  text,
     trace_id    text,
-    prev_hash   bytea,                     -- hash chain opsional (ADR 0011)
+    prev_hash   bytea,                     -- hash chain opsional (ADR 0011), belum diimplementasikan
     PRIMARY KEY (id, occurred_at)
 ) PARTITION BY RANGE (occurred_at);
 ```
@@ -647,14 +662,14 @@ CREATE TABLE files (
 
 ## 11. Strategi index & performa (ringkas)
 
-| Pola query | Index |
-|---|---|
-| Daftar record per entity, terbaru | `records (entity_id, created_at DESC)` partial |
-| Filter scope organisasi | `objects.owner_path` GiST + `<@` operator |
-| Filter/sort field | index ekspresi partial per field (`is_indexed`) |
-| Pencarian judul | GIN `tsvector` + `pg_trgm` |
-| Navigasi relasi balik | `record_links (target_id, relationship_id)` |
-| Dashboard | Hanya membaca `indicator_values` (PK sudah mencakup) |
-| Outbox relay | Partial index `WHERE published_at IS NULL` |
+| Pola query                        | Index                                                |
+| --------------------------------- | ---------------------------------------------------- |
+| Daftar record per entity, terbaru | `records (entity_id, created_at DESC)` partial       |
+| Filter scope organisasi           | `objects.owner_path` GiST + `<@` operator            |
+| Filter/sort field                 | index ekspresi partial per field (`is_indexed`)      |
+| Pencarian judul                   | GIN `tsvector` + `pg_trgm`                           |
+| Navigasi relasi balik             | `record_links (target_id, relationship_id)`          |
+| Dashboard                         | Hanya membaca `indicator_values` (PK sudah mencakup) |
+| Outbox relay                      | Partial index `WHERE published_at IS NULL`           |
 
-**N+1:** `RecordRepository::list()` wajib melakukan *eager load* relasi yang tampil di kolom tabel dalam **satu** query `record_links JOIN records` per relationship (batch `WHERE source_id = ANY($1)`), bukan per baris.
+**N+1:** `RecordRepository::list()` wajib melakukan _eager load_ relasi yang tampil di kolom tabel dalam **satu** query `record_links JOIN records` per relationship (batch `WHERE source_id = ANY($1)`), bukan per baris.

@@ -31,13 +31,13 @@ WHERE o.owner_path <@ ANY(:scope_paths)          -- path assignment dengan inclu
 
 ### 1.2 Implementasi di Laravel
 
-| Komponen | Tugas |
-|---|---|
-| `AccessContext` (readonly DTO per request) | user, kind, daftar `(permission → paths[])`, clearance tertinggi per app |
-| `ScopedRecordQuery` | Menambahkan klausa scope ke setiap query `records`/`objects`. **Tidak ada jalan pintas tanpa scope** kecuali `SystemContext` eksplisit untuk job internal. |
-| `RecordPolicy` | `view/update/delete` per objek: permission + scope + workflow lock |
-| `FieldGate` | Memfilter field sebelum dikirim ke Inertia/API berdasarkan clearance. Masking: `personal` → `3201********0001` (4 awal + 4 akhir) |
-| `Gate::before` | Super admin platform **tidak** otomatis membaca data `personal_specific`. Akses tetap dicatat. |
+| Komponen                                   | Tugas                                                                                                                                                      |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AccessContext` (readonly DTO per request) | user, kind, daftar `(permission → paths[])`, clearance tertinggi per app                                                                                   |
+| `ScopedRecordQuery`                        | Menambahkan klausa scope ke setiap query `records`/`objects`. **Tidak ada jalan pintas tanpa scope** kecuali `SystemContext` eksplisit untuk job internal. |
+| `RecordPolicy`                             | `view/update/delete` per objek: permission + scope + workflow lock                                                                                         |
+| `FieldGate`                                | Memfilter field sebelum dikirim ke Inertia/API berdasarkan clearance. Masking: `personal` → `3201********0001` (4 awal + 4 akhir)                          |
+| `Gate::before`                             | Super admin platform **tidak** otomatis membaca data `personal_specific`. Akses tetap dicatat.                                                             |
 
 ### 1.3 Row-Level Security (lapis pertahanan kedua, M5)
 
@@ -58,47 +58,47 @@ CREATE POLICY objects_scope ON objects
 
 ## 2. Role bawaan
 
-| Role | Level | Clearance | Isi |
-|---|---|---|---|
-| `platform_admin` | platform | `restricted` | Kelola aplikasi, organisasi, role platform, codelist. Tidak otomatis membaca data personal. |
-| `data_steward` (Walidata) | platform | `internal` | Setujui consumer shared entity, publikasi data product, kualitas data |
-| `dpo` | platform | `personal_specific` | Akses audit PII, DPIA, respons permintaan subjek data |
-| `app_admin` | aplikasi | `internal` | Kelola metadata app (draft), form, view, workflow app tsb. Publish butuh `platform.metadata.publish`. |
-| `operator` | aplikasi | `internal` | CRUD record dalam scope |
-| `verifikator` | aplikasi | `internal` | Transisi verify/return/reject |
-| `approver` | aplikasi | `internal` | Transisi approve/publish |
-| `viewer` | aplikasi | `internal` | Baca record & dashboard |
-| `partner_contributor` | aplikasi | `public` | User eksternal: kelola contribution/evidence milik organisasinya |
-| `auditor` | platform | `restricted` | Baca audit log, read-only semua metadata |
+| Role                      | Level    | Clearance           | Isi                                                                                                   |
+| ------------------------- | -------- | ------------------- | ----------------------------------------------------------------------------------------------------- |
+| `platform_admin`          | platform | `restricted`        | Kelola aplikasi, organisasi, role platform, codelist. Tidak otomatis membaca data personal.           |
+| `data_steward` (Walidata) | platform | `internal`          | Setujui consumer shared entity, publikasi data product, kualitas data                                 |
+| `dpo`                     | platform | `personal_specific` | Akses audit PII, DPIA, respons permintaan subjek data                                                 |
+| `app_admin`               | aplikasi | `internal`          | Kelola metadata app (draft), form, view, workflow app tsb. Publish butuh `platform.metadata.publish`. |
+| `operator`                | aplikasi | `internal`          | CRUD record dalam scope                                                                               |
+| `verifikator`             | aplikasi | `internal`          | Transisi verify/return/reject                                                                         |
+| `approver`                | aplikasi | `internal`          | Transisi approve/publish                                                                              |
+| `viewer`                  | aplikasi | `internal`          | Baca record & dashboard                                                                               |
+| `partner_contributor`     | aplikasi | `public`            | User eksternal: kelola contribution/evidence milik organisasinya                                      |
+| `auditor`                 | platform | `restricted`        | Baca audit log, read-only semua metadata                                                              |
 
 Role dan clearance yang lebih tinggi (`personal`) diberikan per aplikasi secara eksplisit dengan alasan tercatat.
 
 ## 3. Pelindungan data pribadi (UU 27/2022 & PP 33/2026)
 
-| Kewajiban | Implementasi di platform | Dasar |
-|---|---|---|
-| Klasifikasi data pribadi umum vs spesifik | `fields.classification` (`personal` / `personal_specific`); wajib diisi saat membuat field. Wizard memberi peringatan jika label mengandung "NIK", "kesehatan", "agama", "anak", dst. | UU 27/2022 Pasal 4 |
-| Dasar pemrosesan & tujuan | `entities.config.processing_basis` + `purpose` wajib jika ada field personal. Ditampilkan di form sebagai pemberitahuan. | UU 27/2022 Pasal 20 |
-| Minimisasi | Field personal di-review oleh `dpo` sebelum entity dipublikasikan (gate di `PublishEntityVersion`) | UU 27/2022 Pasal 16 ayat (2) |
-| Penilaian dampak (DPIA) | Checklist DPIA terlampir pada entity dengan field `personal_specific` atau pemrosesan skala besar | UU 27/2022 Pasal 34 |
-| Pejabat PDP | Role `dpo` | UU 27/2022 Pasal 53 |
-| Notifikasi kegagalan PDP | Runbook insiden (doc 13) dengan tenggat notifikasi | UU 27/2022 Pasal 46 |
-| Hak subjek data (akses, koreksi, hapus) | Fitur "Data Subject Request": cari semua objek yang terkait `core_persons.id` lewat `record_links`, lalu export/koreksi/anonimisasi | UU 27/2022 Pasal 5–13 |
-| Retensi | `entities.config.retention_months`; job anonimisasi bulanan | UU 27/2022 Pasal 16 ayat (2) |
-| Aturan teknis pelaksanaan | PP 33/2026 berlaku **16 Januari 2027**. Detail kewajiban teknis pengendali perlu dipetakan ulang setelah teks final dibaca lengkap. | PP 33/2026 |
+| Kewajiban                                 | Implementasi di platform                                                                                                                                                              | Dasar                        |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Klasifikasi data pribadi umum vs spesifik | `fields.classification` (`personal` / `personal_specific`); wajib diisi saat membuat field. Wizard memberi peringatan jika label mengandung "NIK", "kesehatan", "agama", "anak", dst. | UU 27/2022 Pasal 4           |
+| Dasar pemrosesan & tujuan                 | `entities.config.processing_basis` + `purpose` wajib jika ada field personal. Ditampilkan di form sebagai pemberitahuan.                                                              | UU 27/2022 Pasal 20          |
+| Minimisasi                                | Field personal di-review oleh `dpo` sebelum entity dipublikasikan (gate di `PublishEntityVersion`)                                                                                    | UU 27/2022 Pasal 16 ayat (2) |
+| Penilaian dampak (DPIA)                   | Checklist DPIA terlampir pada entity dengan field `personal_specific` atau pemrosesan skala besar                                                                                     | UU 27/2022 Pasal 34          |
+| Pejabat PDP                               | Role `dpo`                                                                                                                                                                            | UU 27/2022 Pasal 53          |
+| Notifikasi kegagalan PDP                  | Runbook insiden (doc 13) dengan tenggat notifikasi                                                                                                                                    | UU 27/2022 Pasal 46          |
+| Hak subjek data (akses, koreksi, hapus)   | Fitur "Data Subject Request": cari semua objek yang terkait `core_persons.id` lewat `record_links`, lalu export/koreksi/anonimisasi                                                   | UU 27/2022 Pasal 5–13        |
+| Retensi                                   | `entities.config.retention_months`; job anonimisasi bulanan                                                                                                                           | UU 27/2022 Pasal 16 ayat (2) |
+| Aturan teknis pelaksanaan                 | PP 33/2026 berlaku **16 Januari 2027**. Detail kewajiban teknis pengendali perlu dipetakan ulang setelah teks final dibaca lengkap.                                                   | PP 33/2026                   |
 
 > Nomor pasal di atas perlu diverifikasi terhadap teks resmi (JDIH BPK) sebelum dokumen ini dipakai sebagai rujukan formal. Tabel ini adalah pemetaan teknis, **bukan** nasihat hukum.
 
 ## 4. Threat model (STRIDE, fokus komponen berisiko)
 
-| Ancaman | Contoh di platform | Mitigasi |
-|---|---|---|
-| **S**poofing | Credential stuffing; token API bocor | Rate limit login (5/menit/IP+email), 2FA wajib untuk admin & verifikator, token API ber-scope + rotasi 90 hari, OAuth2 client credentials untuk mesin |
-| **T**ampering | Edit record di state terkunci; mengubah `owner_org_id` lewat payload | `owner_org_id` tidak pernah diambil dari input tanpa cek scope; `lock_version` untuk konflik; workflow lock di Policy |
-| **R**epudiation | Verifikator menyangkal approve | `workflow_history` + `audit_logs` append-only, `trace_id`, hash chain opsional |
-| **I**nformation disclosure | IDOR `/records/{uuid}`; data personal ikut di payload Inertia; event payload berisi PII | Policy per objek, `FieldGate` sebelum serialisasi, payload event hanya id, Inertia props di-whitelist per field |
-| **D**enial of service | Process dengan join besar; export jutaan baris; regex jahat di `pattern` | `statement_timeout` per run (default 30 dtk, max 5 mnt), batas baris output, export via job + chunk, validasi regex dengan batas panjang dan uji *catastrophic backtracking* sebelum dipublikasikan |
-| **E**levation of privilege | `app_admin` membuat role dengan permission platform; formula injeksi SQL | Role aplikasi hanya boleh memuat permission `{app}.*` miliknya; formula dikompilasi dari AST whitelist (doc 07); identifier dari metadata |
+| Ancaman                    | Contoh di platform                                                                      | Mitigasi                                                                                                                                                                                            |
+| -------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S**poofing               | Credential stuffing; token API bocor                                                    | Rate limit login (5/menit/IP+email), 2FA wajib untuk admin & verifikator, token API ber-scope + rotasi 90 hari, OAuth2 client credentials untuk mesin                                               |
+| **T**ampering              | Edit record di state terkunci; mengubah `owner_org_id` lewat payload                    | `owner_org_id` tidak pernah diambil dari input tanpa cek scope; `lock_version` untuk konflik; workflow lock di Policy                                                                               |
+| **R**epudiation            | Verifikator menyangkal approve                                                          | `workflow_history` + `audit_logs` append-only, `trace_id`, hash chain opsional                                                                                                                      |
+| **I**nformation disclosure | IDOR `/records/{uuid}`; data personal ikut di payload Inertia; event payload berisi PII | Policy per objek, `FieldGate` sebelum serialisasi, payload event hanya id, Inertia props di-whitelist per field                                                                                     |
+| **D**enial of service      | Process dengan join besar; export jutaan baris; regex jahat di `pattern`                | `statement_timeout` per run (default 30 dtk, max 5 mnt), batas baris output, export via job + chunk, validasi regex dengan batas panjang dan uji _catastrophic backtracking_ sebelum dipublikasikan |
+| **E**levation of privilege | `app_admin` membuat role dengan permission platform; formula injeksi SQL                | Role aplikasi hanya boleh memuat permission `{app}.*` miliknya; formula dikompilasi dari AST whitelist (doc 07); identifier dari metadata                                                           |
 
 ### Kontrol spesifik metadata-driven
 

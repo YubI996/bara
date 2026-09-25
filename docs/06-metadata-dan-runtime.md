@@ -18,24 +18,24 @@ interface FieldType
 }
 ```
 
-| Type | Disimpan di JSONB sebagai | Config | Validasi | UI | `sqlCast` |
-|---|---|---|---|---|---|
-| `string` | string | `max_length` (≤ 500), `pattern` | `string`, `max` | TextInput | – |
-| `text` | string | `max_length` (≤ 20000) | `string`, `max` | Textarea | – |
-| `rich_text` | string (HTML tersanitasi) | allowlist tag | sanitasi | RichText (a11y) | – |
-| `integer` | number | `min`, `max` | `integer`, `between` | NumberInput | `bigint` |
-| `decimal` | string (presisi terjaga) | `scale` (≤ 6), `min`, `max` | `decimal:0,scale` | NumberInput | `numeric` |
-| `money` | string (Rupiah, 2 desimal) | `min` | `decimal:0,2` | MoneyInput | `numeric` |
-| `percentage` | string | `scale` | `between:0,100` | NumberInput + % | `numeric` |
-| `boolean` | boolean | – | `boolean` | Switch | `boolean` |
-| `date` | string `YYYY-MM-DD` | `min`, `max` (bisa relatif: `today`) | `date_format:Y-m-d` | DatePicker | `date` |
-| `datetime` | string ISO 8601 UTC | – | `date` | DateTimePicker | `timestamptz` |
-| `enum` | string (code) | `options[]` **atau** `codelist` | `in:` / exists codelist | Select / RadioGroup (≤ 5 opsi) | – |
-| `multi_enum` | string[] | sama | `array`, `in:` | CheckboxGroup / Combobox | – |
-| `relationship` | **tidak di JSONB**, disimpan di `record_links` | `relationship_id` | exists + scope check | EntitySelector (async search) | – |
-| `file` | uuid[] (ke `files`) | `mimes`, `max_kb`, `max_files` | file rules | FileUpload | – |
-| `region` | uuid (Core.Region) | `level` min/max | exists | Cascading select | – |
-| `geo_point` | `{lat, lng}` | bbox | numeric range | Map picker + input manual (a11y) | – |
+| Type           | Disimpan di JSONB sebagai                      | Config                               | Validasi                | UI                               | `sqlCast`     |
+| -------------- | ---------------------------------------------- | ------------------------------------ | ----------------------- | -------------------------------- | ------------- |
+| `string`       | string                                         | `max_length` (≤ 500), `pattern`      | `string`, `max`         | TextInput                        | –             |
+| `text`         | string                                         | `max_length` (≤ 20000)               | `string`, `max`         | Textarea                         | –             |
+| `rich_text`    | string (HTML tersanitasi)                      | allowlist tag                        | sanitasi                | RichText (a11y)                  | –             |
+| `integer`      | number                                         | `min`, `max`                         | `integer`, `between`    | NumberInput                      | `bigint`      |
+| `decimal`      | string (presisi terjaga)                       | `scale` (≤ 6), `min`, `max`          | `decimal:0,scale`       | NumberInput                      | `numeric`     |
+| `money`        | string (Rupiah, 2 desimal)                     | `min`                                | `decimal:0,2`           | MoneyInput                       | `numeric`     |
+| `percentage`   | string                                         | `scale`                              | `between:0,100`         | NumberInput + %                  | `numeric`     |
+| `boolean`      | boolean                                        | –                                    | `boolean`               | Switch                           | `boolean`     |
+| `date`         | string `YYYY-MM-DD`                            | `min`, `max` (bisa relatif: `today`) | `date_format:Y-m-d`     | DatePicker                       | `date`        |
+| `datetime`     | string ISO 8601 UTC                            | –                                    | `date`                  | DateTimePicker                   | `timestamptz` |
+| `enum`         | string (code)                                  | `options[]` **atau** `codelist`      | `in:` / exists codelist | Select / RadioGroup (≤ 5 opsi)   | –             |
+| `multi_enum`   | string[]                                       | sama                                 | `array`, `in:`          | CheckboxGroup / Combobox         | –             |
+| `relationship` | **tidak di JSONB**, disimpan di `record_links` | `relationship_id`                    | exists + scope check    | EntitySelector (async search)    | –             |
+| `file`         | uuid[] (ke `files`)                            | `mimes`, `max_kb`, `max_files`       | file rules              | FileUpload                       | –             |
+| `region`       | uuid (Core.Region)                             | `level` min/max                      | exists                  | Cascading select                 | –             |
+| `geo_point`    | `{lat, lng}`                                   | bbox                                 | numeric range           | Map picker + input manual (a11y) | –             |
 
 Semua nilai numerik presisi (`decimal`, `money`, `percentage`) disimpan sebagai **string** di JSONB, lalu di-cast `::numeric` di SQL. Angka JSON (double) tidak dipakai untuk uang, supaya tidak terjadi error pembulatan floating point.
 
@@ -72,7 +72,7 @@ GET    /apps/{app}/{entity}/lookup?q=         untuk EntitySelector (JSON)
 POST   /apps/{app}/{entity}/export            job export (CSV/XLSX)
 ```
 
-Satu `RecordController` generik. `{app}` dan `{entity}` di-*resolve* ke `EntityContext` lewat route binding. Kalau tidak ditemukan atau tidak aktif, responsnya 404.
+Satu `RecordController` generik. `{app}` dan `{entity}` di-_resolve_ ke `EntityContext` lewat route binding. Kalau tidak ditemukan atau tidak aktif, responsnya 404.
 
 ### Action: `CreateRecord`
 
@@ -94,20 +94,20 @@ Satu `RecordController` generik. `{app}` dan `{entity}` di-*resolve* ke `EntityC
 
 - Filter dari query string divalidasi terhadap field yang `is_indexed` atau `is_searchable`. Field lain tidak bisa difilter, supaya tidak terjadi full scan tanpa sengaja.
 - Paginasi cursor `(created_at, id)` untuk tabel besar, dan offset hanya untuk ≤ 10.000 baris.
-- Kolom relasi di-*eager load* per batch (lihat doc 04 §11).
+- Kolom relasi di-_eager load_ per batch (lihat doc 04 §11).
 
 ## 4. Evolusi skema (versi)
 
-| Perubahan | Kategori | Perlakuan data lama |
-|---|---|---|
-| Tambah field opsional | aman | Tidak perlu migrasi. Nilai lama = null. |
-| Tambah field wajib | butuh default | Wajib isi `default` atau jalankan backfill job. Record lama tetap valid sampai diedit. |
-| Rename label / help text | aman | – |
-| Rename `code` | aman (via `field_key`) | Job menulis ulang key JSONB per batch 5.000 baris |
-| Ubah tipe kompatibel (`integer` → `decimal`, `string` → `text`) | migrasi otomatis | Job cast + validasi |
-| Ubah tipe tidak kompatibel (`string` → `integer`) | **ditolak** jika ada data yang gagal di-cast | Laporan baris gagal harus diperbaiki dulu |
-| Hapus field | **ditolak** jika dipakai process/indicator/view/workflow guard aktif | Setelah bebas: field disembunyikan, data tetap di JSONB sampai retensi |
-| Perketat validasi (mis. `max` turun) | peringatan | Record lama tidak dipaksa. Validasi baru berlaku saat diedit. |
+| Perubahan                                                       | Kategori                                                             | Perlakuan data lama                                                                    |
+| --------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Tambah field opsional                                           | aman                                                                 | Tidak perlu migrasi. Nilai lama = null.                                                |
+| Tambah field wajib                                              | butuh default                                                        | Wajib isi `default` atau jalankan backfill job. Record lama tetap valid sampai diedit. |
+| Rename label / help text                                        | aman                                                                 | –                                                                                      |
+| Rename `code`                                                   | aman (via `field_key`)                                               | Job menulis ulang key JSONB per batch 5.000 baris                                      |
+| Ubah tipe kompatibel (`integer` → `decimal`, `string` → `text`) | migrasi otomatis                                                     | Job cast + validasi                                                                    |
+| Ubah tipe tidak kompatibel (`string` → `integer`)               | **ditolak** jika ada data yang gagal di-cast                         | Laporan baris gagal harus diperbaiki dulu                                              |
+| Hapus field                                                     | **ditolak** jika dipakai process/indicator/view/workflow guard aktif | Setelah bebas: field disembunyikan, data tetap di JSONB sampai retensi                 |
+| Perketat validasi (mis. `max` turun)                            | peringatan                                                           | Record lama tidak dipaksa. Validasi baru berlaku saat diedit.                          |
 
 Record menyimpan `entity_version_id`. Tampilan record lama memakai **versi terbaru**, dan field yang sudah dihapus ditampilkan di bagian "Data historis" (read-only).
 
@@ -117,22 +117,26 @@ Record menyimpan `entity_version_id`. Tampilan record lama memakai **versi terba
 
 ```json
 {
-  "sections": [
-    {
-      "title": "Identitas Kegiatan",
-      "description": "Isi sesuai DPA.",
-      "fields": ["activity", "period_month", "location"]
-    },
-    {
-      "title": "Realisasi",
-      "fields": ["physical_pct", "budget_realized"],
-      "visible_when": { "field": "status_kegiatan", "op": "in", "value": ["berjalan","selesai"] }
-    }
-  ]
+    "sections": [
+        {
+            "title": "Identitas Kegiatan",
+            "description": "Isi sesuai DPA.",
+            "fields": ["activity", "period_month", "location"]
+        },
+        {
+            "title": "Realisasi",
+            "fields": ["physical_pct", "budget_realized"],
+            "visible_when": {
+                "field": "status_kegiatan",
+                "op": "in",
+                "value": ["berjalan", "selesai"]
+            }
+        }
+    ]
 }
 ```
 
-`visible_when` memakai subset ekspresi formula (doc 07). Ekspresi yang sama dievaluasi di server (field tersembunyi diabaikan dan tidak divalidasi *required*) dan di klien (interpreter TS kecil dari AST yang sama). Tujuannya supaya perilaku server dan klien identik.
+`visible_when` memakai subset ekspresi formula (doc 07). Ekspresi yang sama dievaluasi di server (field tersembunyi diabaikan dan tidak divalidasi _required_) dan di klien (interpreter TS kecil dari AST yang sama). Tujuannya supaya perilaku server dan klien identik.
 
 ## 6. Konsumsi shared entity oleh aplikasi lain
 

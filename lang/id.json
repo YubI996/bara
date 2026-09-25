@@ -1,0 +1,10 @@
+{
+    "Password updated.": "Password berhasil diganti.",
+    "Profile updated.": "Profil berhasil diperbarui.",
+    "The provided two factor authentication code was invalid.": "Kode autentikasi dua faktor tidak valid.",
+    "The provided password was incorrect.": "Password yang dimasukkan salah.",
+    "The provided password does not match your current password.": "Password tidak cocok dengan password saat ini.",
+    "Verify Email Address": "Verifikasi Alamat Email",
+    "Reset Password Notification": "Pemberitahuan Atur Ulang Password",
+    "Reset Password": "Atur Ulang Password"
+}

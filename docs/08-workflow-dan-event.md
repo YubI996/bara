@@ -18,14 +18,14 @@ stateDiagram-v2
     published --> [*]
 ```
 
-| State | `locks_record` | Catatan |
-|---|---|---|
-| draft | tidak | Operator bebas edit |
-| submitted | ya | Hanya bisa kembali lewat `return` |
-| verified | ya | |
-| approved | ya | |
-| published | ya | Final. Koreksi lewat record revisi baru (`revision_of`), bukan edit langsung. |
-| rejected | ya | Final |
+| State     | `locks_record` | Catatan                                                                       |
+| --------- | -------------- | ----------------------------------------------------------------------------- |
+| draft     | tidak          | Operator bebas edit                                                           |
+| submitted | ya             | Hanya bisa kembali lewat `return`                                             |
+| verified  | ya             |                                                                               |
+| approved  | ya             |                                                                               |
+| published | ya             | Final. Koreksi lewat record revisi baru (`revision_of`), bukan edit langsung. |
+| rejected  | ya             | Final                                                                         |
 
 Template bisa disalin dan dimodifikasi per entity, misalnya satu tingkat (`draft → submitted → approved`) untuk data sederhana.
 
@@ -84,7 +84,7 @@ SELECT e.* FROM outbox_events e JOIN batch USING (id);
 ```
 
 - `SKIP LOCKED` membuat beberapa relay aman berjalan paralel.
-- Event yang gagal lebih dari 10 kali masuk status *dead letter* dan muncul di halaman admin, dengan tombol replay.
+- Event yang gagal lebih dari 10 kali masuk status _dead letter_ dan muncul di halaman admin, dengan tombol replay.
 - Retensi outbox: event published dihapus setelah 30 hari (sudah tercatat di audit bila penting).
 
 ### 2.3 Listener idempotent
@@ -110,18 +110,18 @@ final class RecalculateIndicatorListener implements ShouldQueue
 
 ### 2.4 Katalog event (v1)
 
-| Event | Payload (tanpa PII) | Subscriber bawaan |
-|---|---|---|
-| `record.created` | entity, id, owner_org | recalculation, webhook |
-| `record.updated` | entity, id, changed_fields[] | recalculation |
-| `record.deleted` | entity, id | recalculation |
-| `record.submitted` / `verified` / `returned` / `rejected` / `approved` / `published` | entity, id, actor, from, to | notifikasi, recalculation |
-| `workflow.overdue` | entity, id, state, hours_over | notifikasi eskalasi |
-| `metadata.published` | entity, version | index, permission, cache |
-| `indicator.updated` | indicator, version, periods[] | cache dashboard, webhook |
-| `data_product.published` | code, version | notifikasi consumer, SPLP |
-| `organization.restructured` | org_id, old_path, new_path | rebuild owner_path |
-| `role.assigned` / `role.revoked` | user, role, scope | invalidasi cache akses |
+| Event                                                                                | Payload (tanpa PII)           | Subscriber bawaan         |
+| ------------------------------------------------------------------------------------ | ----------------------------- | ------------------------- |
+| `record.created`                                                                     | entity, id, owner_org         | recalculation, webhook    |
+| `record.updated`                                                                     | entity, id, changed_fields[]  | recalculation             |
+| `record.deleted`                                                                     | entity, id                    | recalculation             |
+| `record.submitted` / `verified` / `returned` / `rejected` / `approved` / `published` | entity, id, actor, from, to   | notifikasi, recalculation |
+| `workflow.overdue`                                                                   | entity, id, state, hours_over | notifikasi eskalasi       |
+| `metadata.published`                                                                 | entity, version               | index, permission, cache  |
+| `indicator.updated`                                                                  | indicator, version, periods[] | cache dashboard, webhook  |
+| `data_product.published`                                                             | code, version                 | notifikasi consumer, SPLP |
+| `organization.restructured`                                                          | org_id, old_path, new_path    | rebuild owner_path        |
+| `role.assigned` / `role.revoked`                                                     | user, role, scope             | invalidasi cache akses    |
 
 Penamaan event: `{aggregate}.{past_tense_verb}`, huruf kecil. Skema payload berversi (`"v": 1`), dan perubahan yang tidak kompatibel memakai nama event baru.
 
@@ -129,10 +129,12 @@ Penamaan event: `{aggregate}.{past_tense_verb}`, huruf kecil. Skema payload berv
 
 ```json
 {
-  "event_type": "record.approved",
-  "filter": { "entity": "monev.realization" },
-  "handler": "recalculate_indicator",
-  "config": { "indicators": ["capaian_fisik_program", "serapan_anggaran_opd"] }
+    "event_type": "record.approved",
+    "filter": { "entity": "monev.realization" },
+    "handler": "recalculate_indicator",
+    "config": {
+        "indicators": ["capaian_fisik_program", "serapan_anggaran_opd"]
+    }
 }
 ```
 
