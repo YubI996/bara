@@ -1,36 +1,60 @@
-import { Head } from '@inertiajs/react';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { PageHeader } from '@/components/page-header';
+import { useMainNav } from '@/hooks/use-main-nav';
 import { dashboard } from '@/routes';
 
+const DESCRIPTIONS: Record<string, string> = {
+    Data: 'Isi dan kelola data aplikasi yang menjadi kewenangan unit Anda.',
+    Organisasi: 'Kelola struktur unit organisasi Pemda.',
+    Aplikasi: 'Rancang aplikasi, entity, dan field tanpa menulis kode.',
+};
+
+/**
+ * Halaman pertama setelah masuk. Sampai modul dasbor indikator (M9) tersedia, halaman ini
+ * menjadi pintasan ke menu yang boleh diakses pengguna (UX-005).
+ */
 export default function Dashboard() {
+    const { auth, pemda } = usePage().props;
+    const shortcuts = useMainNav().filter((item) => item.title !== 'Dasbor');
+
     return (
         <>
             <Head title="Dasbor" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                </div>
+            <div className="space-y-6 p-4 md:p-6">
+                <PageHeader
+                    title="Dasbor"
+                    description={`Selamat datang, ${auth.user.name}. ${pemda.name}.`}
+                />
+                <nav aria-label="Pintasan">
+                    <ul className="grid gap-4 md:grid-cols-3">
+                        {shortcuts.map((item) => (
+                            <li key={item.title}>
+                                <Link
+                                    href={item.href}
+                                    className="flex h-full flex-col gap-2 rounded-lg border p-4 hover:bg-muted"
+                                >
+                                    <span className="flex items-center gap-2 font-semibold">
+                                        {item.icon && (
+                                            <item.icon
+                                                className="size-5"
+                                                aria-hidden
+                                            />
+                                        )}
+                                        {item.title}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {DESCRIPTIONS[item.title] ?? ''}
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
             </div>
         </>
     );
 }
 
 Dashboard.layout = {
-    breadcrumbs: [
-        {
-            title: 'Dasbor',
-            href: dashboard(),
-        },
-    ],
+    breadcrumbs: [{ title: 'Dasbor', href: dashboard() }],
 };

@@ -46,6 +46,11 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // Zona waktu tampilan Pemda: semua tanggal-waktu di UI memakai zona ini (UX-015).
+            'pemda' => [
+                'name' => config()->string('bara.pemda.name'),
+                'timezone' => config()->string('bara.pemda.timezone'),
+            ],
             'auth' => [
                 'user' => $this->presentUser($user),
                 'can' => [

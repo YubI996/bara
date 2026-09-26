@@ -29,6 +29,7 @@ export default function CreateOrganization({
                 </header>
                 <OrganizationForm
                     action={OrganizationController.store.form()}
+                    cancelHref={OrganizationController.index.url()}
                     parents={parents}
                     kinds={kinds}
                     defaultParentId={defaultParentId}

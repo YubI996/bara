@@ -12,6 +12,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            pemda: { name: string; timezone: string };
+            session: { idle_minutes: number | null };
             [key: string]: unknown;
         };
     }

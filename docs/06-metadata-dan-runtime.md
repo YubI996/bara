@@ -109,16 +109,16 @@ Satu `RecordController` generik. `{app}` dan `{entity}` di-_resolve_ ke `EntityC
 
 ## 4. Evolusi skema (versi)
 
-| Perubahan                                                       | Kategori                                                             | Perlakuan data lama                                                                    |
-| --------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Tambah field opsional                                           | aman                                                                 | Tidak perlu migrasi. Nilai lama = null.                                                |
-| Tambah field wajib                                              | butuh default                                                        | Wajib isi `default`; `MigrateRecordData` mengisikannya ke record lama setelah publikasi. |
-| Rename label / help text                                        | aman                                                                 | –                                                                                      |
-| Rename `code`                                                   | aman (via `field_key`)                                               | Job menulis ulang key JSONB per batch 5.000 baris                                      |
+| Perubahan                                                       | Kategori                                                             | Perlakuan data lama                                                                                     |
+| --------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Tambah field opsional                                           | aman                                                                 | Tidak perlu migrasi. Nilai lama = null.                                                                 |
+| Tambah field wajib                                              | butuh default                                                        | Wajib isi `default`; `MigrateRecordData` mengisikannya ke record lama setelah publikasi.                |
+| Rename label / help text                                        | aman                                                                 | –                                                                                                       |
+| Rename `code`                                                   | aman (via `field_key`)                                               | Job menulis ulang key JSONB per batch 5.000 baris                                                       |
 | Ubah tipe kompatibel (`integer` → `decimal`, `string` → `text`) | migrasi otomatis                                                     | `MigrateRecordData`: integer/decimal → string angka, enum → [nilai] (multi_enum), enum → label (string) |
-| Ubah tipe tidak kompatibel (`string` → `integer`)               | **ditolak** jika ada data yang gagal di-cast                         | Laporan baris gagal harus diperbaiki dulu                                              |
-| Hapus field                                                     | **ditolak** jika dipakai process/indicator/view/workflow guard aktif | Setelah bebas: field disembunyikan, data tetap di JSONB sampai retensi                 |
-| Perketat validasi (mis. `max` turun)                            | peringatan                                                           | Record lama tidak dipaksa. Validasi baru berlaku saat diedit.                          |
+| Ubah tipe tidak kompatibel (`string` → `integer`)               | **ditolak** jika ada data yang gagal di-cast                         | Laporan baris gagal harus diperbaiki dulu                                                               |
+| Hapus field                                                     | **ditolak** jika dipakai process/indicator/view/workflow guard aktif | Setelah bebas: field disembunyikan, data tetap di JSONB sampai retensi                                  |
+| Perketat validasi (mis. `max` turun)                            | peringatan                                                           | Record lama tidak dipaksa. Validasi baru berlaku saat diedit.                                           |
 
 Record menyimpan `entity_version_id`. Tampilan record lama memakai **versi terbaru**, dan field yang sudah dihapus ditampilkan di bagian "Data historis" (read-only).
 

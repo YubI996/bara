@@ -57,11 +57,12 @@ export default function TwoFactorRecoveryCodes({
             <CardHeader>
                 <CardTitle className="flex gap-3">
                     <LockKeyhole className="size-4" aria-hidden="true" />
-                    2FA recovery codes
+                    Kode pemulihan 2FA
                 </CardTitle>
                 <CardDescription>
-                    Kode pemulihan let you regain access if you lose your 2FA
-                    device. Store them in a secure password manager.
+                    Kode pemulihan membantu Anda masuk kembali bila perangkat
+                    autentikator hilang. Simpan di pengelola kata sandi yang
+                    aman.
                 </CardDescription>
             </CardHeader>
             <CardContent>

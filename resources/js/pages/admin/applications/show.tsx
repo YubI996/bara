@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 import ApplicationController from '@/actions/App/Modules/Metadata/Http/Controllers/ApplicationController';
 import EntityController from '@/actions/App/Modules/Metadata/Http/Controllers/EntityController';
@@ -24,6 +24,13 @@ function versionText(entity: EntitySummary): string {
 }
 
 export default function ShowApplication({ application, entities, can }: Props) {
+    setLayoutProps({
+        breadcrumbs: [
+            { title: 'Aplikasi', href: ApplicationController.index() },
+            { title: application.name },
+        ],
+    });
+
     return (
         <>
             <Head title={application.name} />

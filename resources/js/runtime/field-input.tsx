@@ -5,7 +5,13 @@ import { Textarea } from '@/components/form/textarea';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { RuntimeField, RuntimeFile } from '@/types';
-import { formatBytes, isFileList, isOptionList, toLocalInput } from './format';
+import {
+    formatBytes,
+    isFileList,
+    isOptionList,
+    toLocalInput,
+    toNumberInput,
+} from './format';
 
 type Errors = Partial<Record<string, string>>;
 
@@ -62,8 +68,8 @@ export function FieldInput({ field, value, errors, timezone }: Props) {
             <div className="grid gap-1 rounded-md border border-dashed p-3">
                 <p className="text-sm font-medium">{field.label}</p>
                 <p className="text-sm text-muted-foreground">
-                    Pilihan wilayah tersedia setelah data wilayah Kemendagri
-                    dimuat (M4). Field ini dilewati untuk sementara.
+                    Isian wilayah belum dapat diisi saat ini. Anda tetap dapat
+                    menyimpan data; isian ini bisa dilengkapi nanti.
                 </p>
             </div>
         );
@@ -103,6 +109,7 @@ export function FieldInput({ field, value, errors, timezone }: Props) {
                                     .join(' ') || undefined
                             }
                             aria-invalid={error ? true : undefined}
+                            aria-required={field.required || undefined}
                             className="mt-0.5 size-6 shrink-0 accent-primary"
                         />
                         <label
@@ -110,12 +117,10 @@ export function FieldInput({ field, value, errors, timezone }: Props) {
                             className="text-sm leading-6 font-medium"
                         >
                             {field.label}
-                            {field.required && (
-                                <span className="font-normal text-muted-foreground">
-                                    {' '}
-                                    (wajib)
-                                </span>
-                            )}
+                            <span className="font-normal text-muted-foreground">
+                                {' '}
+                                ({field.required ? 'wajib' : 'opsional'})
+                            </span>
                         </label>
                     </div>
                     {field.help_text && (
@@ -185,6 +190,12 @@ export function FieldInput({ field, value, errors, timezone }: Props) {
                                     defaultChecked={selected.includes(
                                         option.value,
                                     )}
+                                    // Radio wajib: `required` memberi aria-required pada grup (A11Y-016).
+                                    required={
+                                        !multiple && field.required
+                                            ? true
+                                            : undefined
+                                    }
                                     className="size-6 shrink-0 accent-primary"
                                 />
                                 <span>{option.label}</span>
@@ -269,7 +280,7 @@ export function FieldInput({ field, value, errors, timezone }: Props) {
                                             ? 'numeric'
                                             : 'decimal'
                                     }
-                                    defaultValue={str(defaultValue)}
+                                    defaultValue={toNumberInput(defaultValue)}
                                     className={cn(inputClass, 'max-w-xs')}
                                     autoComplete="off"
                                 />

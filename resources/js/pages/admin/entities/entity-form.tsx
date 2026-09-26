@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import { CheckboxField } from '@/components/form/checkbox-field';
 import { ErrorSummary } from '@/components/form/error-summary';
 import { Field } from '@/components/form/field';
@@ -21,6 +21,8 @@ const labels: Record<string, string> = {
 
 type Props = {
     action: RouteFormDefinition<'post' | 'put'>;
+    /** Tujuan tombol Batal (halaman induk), UX-013. */
+    cancelHref?: string;
     visibilities: Option[];
     entity?: EntitySummary;
     submitLabel: string;
@@ -28,6 +30,7 @@ type Props = {
 
 export function EntityForm({
     action,
+    cancelHref,
     visibilities,
     entity,
     submitLabel,
@@ -167,13 +170,24 @@ export function EntityForm({
                         error={errors.is_shared}
                     />
 
-                    <Button
-                        type="submit"
-                        disabled={processing}
-                        className="min-h-11 md:min-h-9"
-                    >
-                        {processing ? 'Menyimpan…' : submitLabel}
-                    </Button>
+                    <div className="flex flex-wrap gap-3">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="min-h-11 md:min-h-9"
+                        >
+                            {processing ? 'Menyimpan…' : submitLabel}
+                        </Button>
+                        {cancelHref && (
+                            <Button
+                                asChild
+                                variant="secondary"
+                                className="min-h-11 md:min-h-9"
+                            >
+                                <Link href={cancelHref}>Batal</Link>
+                            </Button>
+                        )}
+                    </div>
                 </>
             )}
         </Form>

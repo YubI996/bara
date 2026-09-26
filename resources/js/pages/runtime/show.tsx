@@ -1,9 +1,16 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import { Pencil } from 'lucide-react';
 import RecordController from '@/actions/App/Modules/Data/Http/Controllers/RecordController';
+import { ConfirmAction } from '@/components/confirm-action';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { formatBytes, formatValue, isFileList } from '@/runtime/format';
+import { usePemdaTimezone } from '@/hooks/use-pemda';
+import {
+    formatBytes,
+    formatDateTime,
+    formatValue,
+    isFileList,
+} from '@/runtime/format';
 import type { RuntimeEntity, RuntimeField, RuntimeValues } from '@/types';
 
 type Props = {
@@ -27,13 +34,20 @@ export default function RecordShow({ entity, fields, record, can }: Props) {
         record: record.id,
     };
 
-    const remove = () =>
-        router.delete(RecordController.destroy.url(route), {
-            onBefore: () =>
-                window.confirm(
-                    `Hapus “${record.title}”? Data dapat dipulihkan admin dari arsip.`,
-                ),
-        });
+    const timezone = usePemdaTimezone();
+    setLayoutProps({
+        breadcrumbs: [
+            { title: 'Data', href: RecordController.home() },
+            {
+                title: entity.name_plural,
+                href: RecordController.index({
+                    app: entity.application_code,
+                    entity: entity.code,
+                }),
+            },
+            { title: record.title },
+        ],
+    });
 
     return (
         <>
@@ -53,6 +67,12 @@ export default function RecordShow({ entity, fields, record, can }: Props) {
                                 {entity.name_plural}
                             </Link>{' '}
                             · Pemilik: {record.owner_name ?? '—'}
+                            <span className="block">
+                                Dibuat{' '}
+                                {formatDateTime(record.created_at, timezone)} ·
+                                Terakhir diubah{' '}
+                                {formatDateTime(record.updated_at, timezone)}
+                            </span>
                         </>
                     }
                     actions={
@@ -70,14 +90,15 @@ export default function RecordShow({ entity, fields, record, can }: Props) {
                                 </Button>
                             )}
                             {can.delete && (
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    className="min-h-11 md:min-h-9"
-                                    onClick={remove}
-                                >
-                                    Hapus
-                                </Button>
+                                <ConfirmAction
+                                    trigger="Hapus…"
+                                    title={`Hapus “${record.title}”?`}
+                                    description="Data akan dihapus dari daftar dan tidak bisa dipulihkan sendiri. Hubungi admin bila perlu dipulihkan. Penghapusan ditolak bila data ini masih dirujuk data lain."
+                                    confirmLabel="Ya, hapus"
+                                    processingLabel="Menghapus…"
+                                    method="delete"
+                                    url={RecordController.destroy.url(route)}
+                                />
                             )}
                         </>
                     }
@@ -135,7 +156,11 @@ export default function RecordShow({ entity, fields, record, can }: Props) {
                                         />
                                     ) : field.type === 'text' ? (
                                         <p className="whitespace-pre-line">
-                                            {formatValue(field, value)}
+                                            {formatValue(
+                                                field,
+                                                value,
+                                                timezone,
+                                            )}
                                         </p>
                                     ) : (
                                         <span
@@ -145,7 +170,11 @@ export default function RecordShow({ entity, fields, record, can }: Props) {
                                                     : undefined
                                             }
                                         >
-                                            {formatValue(field, value)}
+                                            {formatValue(
+                                                field,
+                                                value,
+                                                timezone,
+                                            )}
                                         </span>
                                     )}
                                     {field.access === 'masked' && (

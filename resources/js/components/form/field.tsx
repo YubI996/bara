@@ -7,6 +7,8 @@ type Props = {
     required?: boolean;
     hint?: string;
     error?: string;
+    /** Elemen di samping label, mis. tautan "Lupa kata sandi?". */
+    labelAside?: ReactNode;
     /** Render input; terima atribut ARIA yang sudah dihubungkan ke hint & error. */
     children: (aria: {
         id: string;
@@ -20,7 +22,15 @@ type Props = {
  * Pembungkus field form yang aksesibel: label terhubung, penanda wajib berupa teks
  * (bukan hanya warna/asterisk), hint & error dihubungkan lewat aria-describedby.
  */
-export function Field({ id, label, required, hint, error, children }: Props) {
+export function Field({
+    id,
+    label,
+    required,
+    hint,
+    error,
+    labelAside,
+    children,
+}: Props) {
     const hintId = hint ? `${id}-hint` : undefined;
     const errorId = error ? `${id}-error` : undefined;
     const describedBy =
@@ -28,20 +38,23 @@ export function Field({ id, label, required, hint, error, children }: Props) {
 
     return (
         <div className="grid gap-2">
-            <Label htmlFor={id}>
-                {label}
-                {required ? (
-                    <span className="font-normal text-muted-foreground">
-                        {' '}
-                        (wajib)
-                    </span>
-                ) : (
-                    <span className="font-normal text-muted-foreground">
-                        {' '}
-                        (opsional)
-                    </span>
-                )}
-            </Label>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <Label htmlFor={id}>
+                    {label}
+                    {required ? (
+                        <span className="font-normal text-muted-foreground">
+                            {' '}
+                            (wajib)
+                        </span>
+                    ) : (
+                        <span className="font-normal text-muted-foreground">
+                            {' '}
+                            (opsional)
+                        </span>
+                    )}
+                </Label>
+                {labelAside && <div className="ml-auto">{labelAside}</div>}
+            </div>
             {hint && (
                 <p id={hintId} className="text-sm text-muted-foreground">
                     {hint}

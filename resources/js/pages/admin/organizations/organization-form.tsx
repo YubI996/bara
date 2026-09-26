@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import type { RouteFormDefinition } from '@/wayfinder';
 import { ErrorSummary } from '@/components/form/error-summary';
 import { Field } from '@/components/form/field';
@@ -9,6 +9,8 @@ import type { Option, Organization, ParentOption } from '@/types';
 
 type Props = {
     action: RouteFormDefinition<'post' | 'put'>;
+    /** Tujuan tombol Batal (halaman induk), UX-013. */
+    cancelHref?: string;
     parents: ParentOption[];
     kinds: Option[];
     organization?: Organization;
@@ -31,6 +33,7 @@ function indent(option: ParentOption): string {
 
 export function OrganizationForm({
     action,
+    cancelHref,
     parents,
     kinds,
     organization,
@@ -173,13 +176,24 @@ export function OrganizationForm({
                         )}
                     </Field>
 
-                    <Button
-                        type="submit"
-                        disabled={processing}
-                        className="min-h-11 md:min-h-9"
-                    >
-                        {processing ? 'Menyimpan…' : submitLabel}
-                    </Button>
+                    <div className="flex flex-wrap gap-3">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="min-h-11 md:min-h-9"
+                        >
+                            {processing ? 'Menyimpan…' : submitLabel}
+                        </Button>
+                        {cancelHref && (
+                            <Button
+                                asChild
+                                variant="secondary"
+                                className="min-h-11 md:min-h-9"
+                            >
+                                <Link href={cancelHref}>Batal</Link>
+                            </Button>
+                        )}
+                    </div>
                 </>
             )}
         </Form>

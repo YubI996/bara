@@ -11,7 +11,7 @@ return [
     'array' => ':Attribute harus berupa daftar.',
     'boolean' => ':Attribute harus bernilai ya atau tidak.',
     'confirmed' => 'Konfirmasi :attribute tidak cocok.',
-    'current_password' => 'Password saat ini salah.',
+    'current_password' => 'Kata sandi saat ini salah.',
     'date' => ':Attribute bukan tanggal yang valid.',
     'date_format' => ':Attribute harus berformat :format.',
     'decimal' => ':Attribute harus memiliki :decimal angka desimal.',
@@ -55,8 +55,8 @@ return [
 
     'attributes' => [
         'email' => 'email',
-        'password' => 'password',
-        'current_password' => 'password saat ini',
+        'password' => 'kata sandi',
+        'current_password' => 'kata sandi saat ini',
         'name' => 'nama',
     ],
 ];

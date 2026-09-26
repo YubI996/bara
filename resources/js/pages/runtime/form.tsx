@@ -1,4 +1,5 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, setLayoutProps } from '@inertiajs/react';
+import { useState } from 'react';
 import RecordController from '@/actions/App/Modules/Data/Http/Controllers/RecordController';
 import { ErrorSummary } from '@/components/form/error-summary';
 import { Field } from '@/components/form/field';
@@ -36,10 +37,32 @@ export default function RecordForm({
     timezone,
 }: Props) {
     const route = { app: entity.application_code, entity: entity.code };
+    // lock_version dikunci saat halaman dibuka. Setelah konflik, props ikut diperbarui ke versi
+    // terbaru; kalau nilai itu yang dikirim, simpan berikutnya diam-diam menimpa data orang lain (UX-002).
+    const [lockVersion] = useState(record?.lock_version ?? 0);
     const action = record
         ? RecordController.update.form({ ...route, record: record.id })
         : RecordController.store.form(route);
     const title = record ? `Ubah ${record.title}` : `Tambah ${entity.name}`;
+
+    setLayoutProps({
+        breadcrumbs: [
+            { title: 'Data', href: RecordController.home() },
+            { title: entity.name_plural, href: RecordController.index(route) },
+            ...(record
+                ? [
+                      {
+                          title: record.title,
+                          href: RecordController.show({
+                              ...route,
+                              record: record.id,
+                          }),
+                      },
+                  ]
+                : []),
+            { title: record ? 'Ubah' : 'Tambah' },
+        ],
+    });
 
     const labels: Record<string, string> = {
         owner_org_id: 'Unit pemilik',
@@ -73,6 +96,12 @@ export default function RecordForm({
                                     <p className="font-medium">
                                         {errors.lock_version}
                                     </p>
+                                    <p className="mt-1 text-sm">
+                                        Isian Anda di bawah belum tersimpan.
+                                        Salin bagian yang perlu dipertahankan,
+                                        lalu muat ulang untuk melihat data
+                                        terbaru sebelum mengubah lagi.
+                                    </p>
                                     <Link
                                         href={RecordController.edit({
                                             ...route,
@@ -89,7 +118,7 @@ export default function RecordForm({
                                 <input
                                     type="hidden"
                                     name="lock_version"
-                                    value={record.lock_version}
+                                    value={lockVersion}
                                 />
                             ) : (
                                 <Field
@@ -136,7 +165,10 @@ export default function RecordForm({
                             <div className="flex flex-wrap gap-3">
                                 <Button
                                     type="submit"
-                                    disabled={processing}
+                                    disabled={
+                                        processing ||
+                                        errors.lock_version !== undefined
+                                    }
                                     className="min-h-11 md:min-h-9"
                                 >
                                     {processing ? 'Menyimpan…' : 'Simpan'}

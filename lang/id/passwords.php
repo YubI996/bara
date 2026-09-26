@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 return [
-    'reset' => 'Password Anda sudah diatur ulang.',
-    'sent' => 'Jika email terdaftar, tautan atur ulang password sudah dikirim.',
+    'reset' => 'Kata sandi Anda sudah diatur ulang.',
+    'sent' => 'Jika email terdaftar, tautan atur ulang kata sandi sudah dikirim.',
     'throttled' => 'Tunggu sebentar sebelum mencoba lagi.',
-    'token' => 'Token atur ulang password tidak valid.',
-    'user' => 'Jika email terdaftar, tautan atur ulang password sudah dikirim.',
+    'token' => 'Token atur ulang kata sandi tidak valid.',
+    'user' => 'Jika email terdaftar, tautan atur ulang kata sandi sudah dikirim.',
 ];

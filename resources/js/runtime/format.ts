@@ -104,3 +104,39 @@ export function toLocalInput(iso: unknown, timezone: string): string {
     }).format(new Date(iso));
     return parts.replace(' ', 'T');
 }
+
+/** Tanggal-waktu ISO → "25 Sep 2026, 14.30" di zona Pemda. */
+export function formatDateTime(iso: unknown, timezone: string): string {
+    if (typeof iso !== 'string' || iso === '') return '—';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleString('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: timezone,
+    });
+}
+
+/** Tanggal "2026-09-25" → "25 Sep 2026" (tanpa geser zona waktu). */
+export function formatDate(value: unknown): string {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(value))
+        return '—';
+    return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString(
+        'id-ID',
+        {
+            dateStyle: 'medium',
+        },
+    );
+}
+
+/**
+ * Nilai angka tersimpan ("1500.5") → isi input format Indonesia tanpa pemisah ribuan ("1500,5").
+ * Tanpa titik sama sekali, sehingga server tidak salah membaca "1.500" sebagai seribu lima ratus (UX-003).
+ */
+export function toNumberInput(value: unknown): string {
+    if (typeof value === 'number') value = String(value);
+    if (typeof value !== 'string' || !/^-?\d+(\.\d+)?$/.test(value)) {
+        return typeof value === 'string' ? value : '';
+    }
+    return value.replace('.', ',');
+}

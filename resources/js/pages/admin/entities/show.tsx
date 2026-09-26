@@ -1,10 +1,12 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import ApplicationController from '@/actions/App/Modules/Metadata/Http/Controllers/ApplicationController';
 import EntityController from '@/actions/App/Modules/Metadata/Http/Controllers/EntityController';
 import FieldController from '@/actions/App/Modules/Metadata/Http/Controllers/FieldController';
+import { ConfirmAction } from '@/components/confirm-action';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { useRouterAction } from '@/hooks/use-router-action';
 import type {
     ApplicationSummary,
     DraftReport,
@@ -56,6 +58,17 @@ export default function ShowEntity({
     visibilities,
     can,
 }: Props) {
+    const draftAction = useRouterAction();
+    setLayoutProps({
+        breadcrumbs: [
+            { title: 'Aplikasi', href: ApplicationController.index() },
+            {
+                title: application.name,
+                href: ApplicationController.show(application),
+            },
+            { title: entity.name },
+        ],
+    });
     const status = [
         published ? `Terbit v${published.version}` : 'Belum terbit',
         draft ? `draft v${draft.version}` : null,
@@ -91,15 +104,19 @@ export default function ShowEntity({
                             <Button
                                 type="button"
                                 className="min-h-11 md:min-h-9"
+                                disabled={draftAction.processing}
                                 onClick={() =>
-                                    router.post(
+                                    draftAction.run(
+                                        'post',
                                         EntityController.createDraft.url(
                                             entity,
                                         ),
                                     )
                                 }
                             >
-                                Buat draft baru
+                                {draftAction.processing
+                                    ? 'Membuat draft…'
+                                    : 'Buat draft baru'}
                             </Button>
                         )
                     }
@@ -120,26 +137,17 @@ export default function ShowEntity({
                             {can.update && (
                                 <div className="flex flex-wrap gap-2">
                                     {published && (
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            className="min-h-11 md:min-h-9"
-                                            onClick={() =>
-                                                router.delete(
-                                                    EntityController.discardDraft.url(
-                                                        entity,
-                                                    ),
-                                                    {
-                                                        onBefore: () =>
-                                                            window.confirm(
-                                                                `Buang draft v${draft.version}? Semua perubahan yang belum terbit hilang.`,
-                                                            ),
-                                                    },
-                                                )
-                                            }
-                                        >
-                                            Buang draft
-                                        </Button>
+                                        <ConfirmAction
+                                            trigger="Buang draft…"
+                                            title={`Buang draft v${draft.version}?`}
+                                            description="Semua perubahan field yang belum terbit hilang dan tidak bisa dikembalikan. Versi terbit tetap berlaku."
+                                            confirmLabel="Ya, buang draft"
+                                            processingLabel="Membuang…"
+                                            method="delete"
+                                            url={EntityController.discardDraft.url(
+                                                entity,
+                                            )}
+                                        />
                                     )}
                                     <Button
                                         asChild

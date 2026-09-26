@@ -8,8 +8,6 @@ export default function Appearance() {
         <>
             <Head title="Pengaturan tampilan" />
 
-            <h1 className="sr-only">Pengaturan tampilan</h1>
-
             <div className="space-y-6">
                 <Heading
                     variant="small"

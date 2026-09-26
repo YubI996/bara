@@ -10,5 +10,5 @@ test('pesan validasi tampil dalam Bahasa Indonesia', function (): void {
 
 test('login gagal memakai pesan Bahasa Indonesia', function (): void {
     $this->post(route('login.store'), ['email' => 'tidak-ada@example.test', 'password' => 'salah-sekali'])
-        ->assertSessionHasErrors(['email' => 'Email atau password tidak sesuai.']);
+        ->assertSessionHasErrors(['email' => 'Alamat email atau kata sandi tidak sesuai.']);
 });

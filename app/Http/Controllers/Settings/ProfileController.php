@@ -33,7 +33,10 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request, #[CurrentUser] User $user, AuditLogger $audit): RedirectResponse
     {
-        $user->fill($request->validated());
+        $user->fill([
+            'name' => $request->string('name')->toString(),
+            'email' => $request->string('email')->toString(),
+        ]);
         $emailChanged = $user->isDirty('email');
 
         if ($emailChanged) {

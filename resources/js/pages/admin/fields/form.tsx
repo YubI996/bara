@@ -1,6 +1,7 @@
-import { Form, Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { Form, Head, Link, setLayoutProps } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 import ApplicationController from '@/actions/App/Modules/Metadata/Http/Controllers/ApplicationController';
+import EntityController from '@/actions/App/Modules/Metadata/Http/Controllers/EntityController';
 import FieldController from '@/actions/App/Modules/Metadata/Http/Controllers/FieldController';
 import { CheckboxField } from '@/components/form/checkbox-field';
 import { ErrorSummary } from '@/components/form/error-summary';
@@ -9,6 +10,14 @@ import { NativeSelect } from '@/components/form/native-select';
 import { Textarea } from '@/components/form/textarea';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import type {
     ApplicationSummary,
@@ -62,11 +71,37 @@ export default function FieldFormPage({
 }: Props) {
     const [type, setType] = useState(field?.type ?? 'string');
     const [indexed, setIndexed] = useState(field?.is_indexed ?? false);
+    const [unique, setUnique] = useState(field?.is_unique ?? false);
+    // Ganti tipe mengosongkan pengaturan tipe lama; minta konfirmasi bila sudah ada isian (UX-019).
+    const [pendingType, setPendingType] = useState<string | null>(null);
+    const configRef = useRef<HTMLFieldSetElement>(null);
+    const hasConfigInput = () =>
+        Array.from(
+            configRef.current?.querySelectorAll<HTMLInputElement>(
+                'input:not([type=hidden]), textarea',
+            ) ?? [],
+        ).some((el) =>
+            el.type === 'checkbox' || el.type === 'radio'
+                ? el.checked
+                : el.value.trim() !== '',
+        );
     const selected = types.find((t) => t.value === type);
     const action = field?.id
         ? FieldController.update.form({ entity: entity.id, field: field.id })
         : FieldController.store.form(entity);
     const title = field ? `Ubah field: ${field.label}` : 'Tambah field';
+
+    setLayoutProps({
+        breadcrumbs: [
+            { title: 'Aplikasi', href: ApplicationController.index() },
+            {
+                title: application.name,
+                href: ApplicationController.show(application.id),
+            },
+            { title: entity.name, href: EntityController.show(entity.id) },
+            { title: field ? 'Ubah field' : 'Tambah field' },
+        ],
+    });
 
     return (
         <>
@@ -152,9 +187,14 @@ export default function FieldFormPage({
                                         {...aria}
                                         name="type"
                                         value={type}
-                                        onChange={(e) =>
-                                            setType(e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                            const next = e.target.value;
+                                            if (hasConfigInput()) {
+                                                setPendingType(next);
+                                            } else {
+                                                setType(next);
+                                            }
+                                        }}
                                     >
                                         {types.map((t) => (
                                             <option
@@ -168,7 +208,10 @@ export default function FieldFormPage({
                                 )}
                             </Field>
 
-                            <fieldset className="space-y-4 rounded-md border p-4">
+                            <fieldset
+                                ref={configRef}
+                                className="space-y-4 rounded-md border p-4"
+                            >
                                 <legend className="px-1 font-medium">
                                     Pengaturan {selected?.label ?? 'tipe'}
                                 </legend>
@@ -239,8 +282,13 @@ export default function FieldFormPage({
                                         id="is_unique"
                                         name="is_unique"
                                         label={labels.is_unique}
-                                        hint="Tidak boleh ada dua data dengan nilai sama. Butuh index."
-                                        defaultChecked={field?.is_unique}
+                                        hint={
+                                            indexed
+                                                ? 'Tidak boleh ada dua data dengan nilai sama. Butuh index.'
+                                                : 'Nilai unik tidak aktif karena field tidak diindeks. Centang “Diindeks” untuk mengaktifkannya.'
+                                        }
+                                        checked={indexed && unique}
+                                        onChange={setUnique}
                                         disabled={!indexed}
                                         error={errors.is_unique}
                                     />
@@ -257,28 +305,76 @@ export default function FieldFormPage({
                                 )}
                             </fieldset>
 
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                                className="min-h-11 md:min-h-9"
-                            >
-                                {processing
-                                    ? 'Menyimpan…'
-                                    : field
-                                      ? 'Simpan field'
-                                      : 'Tambah ke draft'}
-                            </Button>
+                            <div className="flex flex-wrap gap-3">
+                                <Button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="min-h-11 md:min-h-9"
+                                >
+                                    {processing
+                                        ? 'Menyimpan…'
+                                        : field
+                                          ? 'Simpan field'
+                                          : 'Tambah ke draft'}
+                                </Button>
+                                <Button
+                                    asChild
+                                    variant="secondary"
+                                    className="min-h-11 md:min-h-9"
+                                >
+                                    <Link
+                                        href={EntityController.show(entity.id)}
+                                    >
+                                        Batal
+                                    </Link>
+                                </Button>
+                            </div>
                         </>
                     )}
                 </Form>
             </div>
+
+            <Dialog
+                open={pendingType !== null}
+                onOpenChange={(open) => !open && setPendingType(null)}
+            >
+                <DialogContent>
+                    <DialogTitle>Ganti tipe field?</DialogTitle>
+                    <DialogDescription>
+                        Pengaturan {selected?.label ?? 'tipe'} yang sudah diisi
+                        (opsi, batas, nilai default) akan dikosongkan dan
+                        diganti pengaturan{' '}
+                        {types.find((t) => t.value === pendingType)?.label ??
+                            'tipe baru'}
+                        .
+                    </DialogDescription>
+                    <DialogFooter className="gap-2">
+                        <DialogClose asChild>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="min-h-11 md:min-h-9"
+                            >
+                                Batal, tetap {selected?.label ?? 'tipe lama'}
+                            </Button>
+                        </DialogClose>
+                        <Button
+                            type="button"
+                            className="min-h-11 md:min-h-9"
+                            onClick={() => {
+                                if (pendingType !== null) setType(pendingType);
+                                setPendingType(null);
+                            }}
+                        >
+                            Ya, ganti tipe
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
 
 FieldFormPage.layout = {
-    breadcrumbs: [
-        { title: 'Aplikasi', href: ApplicationController.index() },
-        { title: 'Field', href: '#' },
-    ],
+    breadcrumbs: [{ title: 'Aplikasi', href: ApplicationController.index() }],
 };

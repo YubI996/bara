@@ -1,17 +1,20 @@
 import { Form, Head, setLayoutProps } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useMemo, useState } from 'react';
+import { ErrorSummary } from '@/components/form/error-summary';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import {
     InputOTP,
     InputOTPGroup,
     InputOTPSlot,
 } from '@/components/ui/input-otp';
+import { Label } from '@/components/ui/label';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { store } from '@/routes/two-factor/login';
+
+const LABELS = { code: 'Kode autentikasi', recovery_code: 'Kode pemulihan' };
 
 export default function TwoFactorChallenge() {
     const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
@@ -58,33 +61,46 @@ export default function TwoFactorChallenge() {
                 <Form
                     {...store.form()}
                     className="space-y-4"
+                    noValidate
                     resetOnError
                     resetOnSuccess={!showRecoveryInput}
                 >
                     {({ errors, processing, clearErrors }) => (
                         <>
+                            <ErrorSummary errors={errors} labels={LABELS} />
+
                             {showRecoveryInput ? (
-                                <>
+                                <div className="grid gap-2">
                                     <Label htmlFor="recovery_code">
-                                        Kode pemulihan
+                                        {LABELS.recovery_code}
                                     </Label>
                                     <Input
                                         id="recovery_code"
                                         name="recovery_code"
                                         autoComplete="one-time-code"
                                         type="text"
-                                        placeholder="Masukkan kode pemulihan"
                                         autoFocus={showRecoveryInput}
-                                        required
+                                        aria-describedby={
+                                            errors.recovery_code
+                                                ? 'recovery_code-error'
+                                                : undefined
+                                        }
+                                        aria-invalid={
+                                            errors.recovery_code
+                                                ? true
+                                                : undefined
+                                        }
                                     />
                                     <InputError
+                                        id="recovery_code-error"
                                         message={errors.recovery_code}
                                     />
-                                </>
+                                </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center space-y-3 text-center">
                                     <div className="flex w-full items-center justify-center">
                                         <InputOTP
+                                            id="code"
                                             name="code"
                                             maxLength={OTP_MAX_LENGTH}
                                             value={code}
@@ -92,6 +108,14 @@ export default function TwoFactorChallenge() {
                                             disabled={processing}
                                             pattern={REGEXP_ONLY_DIGITS}
                                             aria-label="Kode autentikasi 6 digit"
+                                            aria-describedby={
+                                                errors.code
+                                                    ? 'code-error'
+                                                    : undefined
+                                            }
+                                            aria-invalid={
+                                                errors.code ? true : undefined
+                                            }
                                             autoComplete="one-time-code"
                                             autoFocus
                                         >
@@ -108,7 +132,10 @@ export default function TwoFactorChallenge() {
                                             </InputOTPGroup>
                                         </InputOTP>
                                     </div>
-                                    <InputError message={errors.code} />
+                                    <InputError
+                                        id="code-error"
+                                        message={errors.code}
+                                    />
                                 </div>
                             )}
 
@@ -117,14 +144,14 @@ export default function TwoFactorChallenge() {
                                 className="w-full"
                                 disabled={processing}
                             >
-                                Lanjut
+                                {processing ? 'Memeriksa…' : 'Lanjut'}
                             </Button>
 
                             <div className="text-center text-sm text-muted-foreground">
                                 <span>atau Anda dapat </span>
                                 <button
                                     type="button"
-                                    className="cursor-pointer text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                    className="cursor-pointer text-foreground underline underline-offset-4"
                                     onClick={() =>
                                         toggleRecoveryMode(clearErrors)
                                     }

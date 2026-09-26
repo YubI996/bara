@@ -1,17 +1,25 @@
-import { Form, Head, usePage } from '@inertiajs/react';
-import { Link } from '@inertiajs/react';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import { ErrorSummary } from '@/components/form/error-summary';
+import { Field } from '@/components/form/field';
+import { StatusMessage } from '@/components/form/status-message';
 import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/profile';
-import type { Auth } from '@/types';
 import { send } from '@/routes/verification';
+import type { Auth } from '@/types';
 
 type PageProps = {
     auth: Auth;
+};
+
+const LABELS = {
+    name: 'Nama',
+    email: 'Alamat email',
+    current_password: 'Kata sandi saat ini',
 };
 
 export default function Profile({
@@ -22,12 +30,13 @@ export default function Profile({
     status?: string;
 }) {
     const { auth } = usePage<PageProps>().props;
+    const [email, setEmail] = useState(auth.user.email);
+    const emailChanged =
+        email.trim().toLowerCase() !== auth.user.email.toLowerCase();
 
     return (
         <>
             <Head title="Pengaturan profil" />
-
-            <h1 className="sr-only">Pengaturan profil</h1>
 
             <div className="space-y-6">
                 <Heading
@@ -38,86 +47,100 @@ export default function Profile({
 
                 <Form
                     {...ProfileController.update.form()}
-                    options={{
-                        preserveScroll: true,
-                    }}
+                    options={{ preserveScroll: true }}
+                    resetOnSuccess={['current_password']}
                     className="space-y-6"
+                    noValidate
                 >
                     {({ processing, errors }) => (
                         <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Nama</Label>
+                            <ErrorSummary errors={errors} labels={LABELS} />
 
-                                <Input
-                                    id="name"
-                                    className="mt-1 block w-full"
-                                    defaultValue={auth.user.name}
-                                    name="name"
+                            <Field
+                                id="name"
+                                label={LABELS.name}
+                                required
+                                error={errors.name}
+                            >
+                                {(aria) => (
+                                    <Input
+                                        {...aria}
+                                        defaultValue={auth.user.name}
+                                        name="name"
+                                        autoComplete="name"
+                                    />
+                                )}
+                            </Field>
+
+                            <Field
+                                id="email"
+                                label={LABELS.email}
+                                required
+                                hint="Mengganti alamat email memerlukan kata sandi saat ini dan verifikasi ulang."
+                                error={errors.email}
+                            >
+                                {(aria) => (
+                                    <Input
+                                        {...aria}
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) =>
+                                            setEmail(e.target.value)
+                                        }
+                                        name="email"
+                                        autoComplete="username"
+                                    />
+                                )}
+                            </Field>
+
+                            {emailChanged && (
+                                <Field
+                                    id="current_password"
+                                    label={LABELS.current_password}
                                     required
-                                    autoComplete="name"
-                                    placeholder="Nama lengkap"
-                                />
-
-                                <InputError
-                                    className="mt-2"
-                                    message={errors.name}
-                                />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Alamat email</Label>
-
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    className="mt-1 block w-full"
-                                    defaultValue={auth.user.email}
-                                    name="email"
-                                    required
-                                    autoComplete="username"
-                                    placeholder="Alamat email"
-                                />
-
-                                <InputError
-                                    className="mt-2"
-                                    message={errors.email}
-                                />
-                            </div>
+                                    error={errors.current_password}
+                                >
+                                    {(aria) => (
+                                        <PasswordInput
+                                            {...aria}
+                                            name="current_password"
+                                            autoComplete="current-password"
+                                        />
+                                    )}
+                                </Field>
+                            )}
 
                             {mustVerifyEmail &&
                                 auth.user.email_verified_at === null && (
-                                    <div>
-                                        <p className="-mt-4 text-sm text-muted-foreground">
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-muted-foreground">
                                             Alamat email Anda belum
                                             terverifikasi.{' '}
                                             <Link
                                                 href={send()}
                                                 as="button"
-                                                className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                                className="text-foreground underline underline-offset-4"
                                             >
-                                                Klik di sini untuk mengirim
-                                                ulang email verifikasi.
+                                                Kirim ulang email verifikasi
                                             </Link>
                                         </p>
 
                                         {status ===
                                             'verification-link-sent' && (
-                                            <div className="mt-2 text-sm font-medium text-green-600">
+                                            <StatusMessage>
                                                 Tautan verifikasi baru sudah
                                                 dikirim ke alamat email Anda.
-                                            </div>
+                                            </StatusMessage>
                                         )}
                                     </div>
                                 )}
 
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    disabled={processing}
-                                    data-test="update-profile-button"
-                                >
-                                    Simpan
-                                </Button>
-                            </div>
+                            <Button
+                                disabled={processing}
+                                data-test="update-profile-button"
+                            >
+                                {processing ? 'Menyimpan…' : 'Simpan'}
+                            </Button>
                         </>
                     )}
                 </Form>

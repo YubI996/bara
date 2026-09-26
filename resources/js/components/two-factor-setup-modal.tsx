@@ -120,14 +120,25 @@ function TwoFactorSetupStep({
                                         type="text"
                                         readOnly
                                         value={manualSetupKey}
-                                        className="h-full w-full bg-background p-3 text-foreground outline-none"
+                                        aria-label="Kunci penyiapan"
+                                        className="h-full w-full bg-background p-3 font-mono text-foreground"
                                     />
                                     <button
+                                        type="button"
                                         onClick={() => copy(manualSetupKey)}
-                                        className="border-l border-border px-3 hover:bg-muted"
+                                        aria-label="Salin kunci penyiapan"
+                                        className="min-w-11 border-l border-border px-3 hover:bg-muted"
                                     >
-                                        <IconComponent className="w-4" />
+                                        <IconComponent
+                                            className="w-4"
+                                            aria-hidden
+                                        />
                                     </button>
+                                    <span role="status" className="sr-only">
+                                        {copiedText === manualSetupKey
+                                            ? 'Kunci disalin.'
+                                            : ''}
+                                    </span>
                                 </>
                             )}
                         </div>
@@ -179,6 +190,17 @@ function TwoFactorVerificationStep({
                                 name="code"
                                 maxLength={OTP_MAX_LENGTH}
                                 onChange={setCode}
+                                aria-label="Kode autentikasi 6 digit"
+                                aria-describedby={
+                                    errors?.confirmTwoFactorAuthentication?.code
+                                        ? 'otp-error'
+                                        : undefined
+                                }
+                                aria-invalid={
+                                    errors?.confirmTwoFactorAuthentication?.code
+                                        ? true
+                                        : undefined
+                                }
                                 disabled={processing}
                                 pattern={REGEXP_ONLY_DIGITS}
                                 autoFocus
@@ -196,6 +218,7 @@ function TwoFactorVerificationStep({
                                 </InputOTPGroup>
                             </InputOTP>
                             <InputError
+                                id="otp-error"
                                 message={
                                     errors?.confirmTwoFactorAuthentication?.code
                                 }

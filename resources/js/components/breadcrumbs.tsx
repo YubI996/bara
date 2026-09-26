@@ -26,8 +26,12 @@ export function Breadcrumbs({
                             return (
                                 <Fragment key={index}>
                                     <BreadcrumbItem>
-                                        {isLast ? (
-                                            <BreadcrumbPage>
+                                        {isLast || item.href === undefined ? (
+                                            <BreadcrumbPage
+                                                aria-current={
+                                                    isLast ? 'page' : undefined
+                                                }
+                                            >
                                                 {item.title}
                                             </BreadcrumbPage>
                                         ) : (

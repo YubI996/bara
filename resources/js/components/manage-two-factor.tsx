@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
 import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
+import { ConfirmAction } from '@/components/confirm-action';
 import { Button } from '@/components/ui/button';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import { disable, enable } from '@/routes/two-factor';
@@ -58,19 +59,15 @@ export default function ManageTwoFactor(props: Props) {
                         aplikasi autentikator (TOTP) di ponsel Anda.
                     </p>
 
-                    <div className="relative inline">
-                        <Form {...disable.form()}>
-                            {({ processing }) => (
-                                <Button
-                                    variant="destructive"
-                                    type="submit"
-                                    disabled={processing}
-                                >
-                                    Nonaktifkan 2FA
-                                </Button>
-                            )}
-                        </Form>
-                    </div>
+                    <ConfirmAction
+                        trigger="Nonaktifkan 2FA…"
+                        title="Nonaktifkan autentikasi dua faktor?"
+                        description="Akun Anda hanya dilindungi kata sandi. Menu administrasi dan akses data berisiko tinggi akan terkunci sampai 2FA diaktifkan kembali (dengan pemindaian QR baru)."
+                        confirmLabel="Ya, nonaktifkan 2FA"
+                        processingLabel="Menonaktifkan…"
+                        method="delete"
+                        url={disable.url()}
+                    />
 
                     <TwoFactorRecoveryCodes
                         recoveryCodesList={recoveryCodesList}
@@ -100,7 +97,10 @@ export default function ManageTwoFactor(props: Props) {
                             >
                                 {({ processing }) => (
                                     <Button type="submit" disabled={processing}>
-                                        Enable 2FA
+                                        <ShieldCheck aria-hidden />
+                                        {processing
+                                            ? 'Menyiapkan…'
+                                            : 'Aktifkan 2FA'}
                                     </Button>
                                 )}
                             </Form>

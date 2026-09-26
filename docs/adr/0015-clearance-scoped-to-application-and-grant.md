@@ -38,10 +38,10 @@ lintas unit, bukan menaikkan hak baca field sensitif.
 
 ## Alternatif
 
-| Opsi                                           | Kekurangan                                                                 |
-| ---------------------------------------------- | -------------------------------------------------------------------------- |
+| Opsi                                                          | Kekurangan                                                                                                                      |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Clearance per record dari role yang grant-nya mencakup record | Lebih presisi untuk user dengan beberapa role di unit berbeda, tetapi butuh query per baris; ditunda sampai ada kebutuhan nyata |
-| Tetap global, andalkan visibilitas `restricted` | Admin entity harus selalu ingat; kebocoran terjadi diam-diam              |
+| Tetap global, andalkan visibilitas `restricted`               | Admin entity harus selalu ingat; kebocoran terjadi diam-diam                                                                    |
 
 ## Konsekuensi
 

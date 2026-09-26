@@ -26,3 +26,21 @@ export async function expectNoA11yViolations(page: Page): Promise<void> {
     );
     expect(summary, summary.join('\n')).toEqual([]);
 }
+
+/**
+ * Tekan Tab sampai `target` mendapat fokus (maks. `limit` kali). Membuktikan elemen bisa
+ * dijangkau keyboard dalam urutan fokus, bukan hanya diisi lewat API.
+ */
+export async function tabTo(
+    page: Page,
+    target: import('@playwright/test').Locator,
+    limit = 15,
+): Promise<void> {
+    for (let i = 0; i < limit; i++) {
+        if (await target.evaluate((el) => el === document.activeElement)) {
+            return;
+        }
+        await page.keyboard.press('Tab');
+    }
+    await expect(target).toBeFocused();
+}

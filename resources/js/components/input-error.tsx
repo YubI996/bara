@@ -9,7 +9,10 @@ export default function InputError({
     return message ? (
         <p
             {...props}
-            className={cn('text-sm text-red-600 dark:text-red-400', className)}
+            className={cn(
+                'text-sm font-medium text-red-700 dark:text-red-300',
+                className,
+            )}
         >
             {message}
         </p>

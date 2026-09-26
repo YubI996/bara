@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { OrganizationRow } from '@/types';
+import { formatDate } from '@/runtime/format';
 
 type Props = {
     organizations: OrganizationRow[];
@@ -174,7 +175,7 @@ export default function OrganizationIndex({
                                             ) : (
                                                 <span className="inline-flex items-center rounded-md border border-neutral-500 px-2 py-0.5 text-xs font-medium text-neutral-700 dark:text-neutral-300">
                                                     Nonaktif sejak{' '}
-                                                    {org.valid_to}
+                                                    {formatDate(org.valid_to)}
                                                 </span>
                                             )}
                                         </td>

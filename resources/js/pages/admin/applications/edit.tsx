@@ -22,6 +22,7 @@ export default function EditApplication({
                 <PageHeader title={`Ubah aplikasi: ${application.name}`} />
                 <ApplicationForm
                     action={ApplicationController.update.form(application)}
+                    cancelHref={ApplicationController.show.url(application)}
                     owners={owners}
                     statuses={statuses}
                     application={application}
@@ -35,6 +36,6 @@ export default function EditApplication({
 EditApplication.layout = {
     breadcrumbs: [
         { title: 'Aplikasi', href: ApplicationController.index() },
-        { title: 'Ubah aplikasi', href: '#' },
+        { title: 'Ubah aplikasi' },
     ],
 };

@@ -111,7 +111,14 @@ test('membangun entity dari metadata sampai terbit, dengan setiap halaman lolos 
     await expect(page.getByText('Draft siap dipublikasikan.')).toBeVisible();
     await expectNoA11yViolations(page);
     await page.getByLabel(/^Catatan rilis/).fill('Rilis awal');
-    await page.getByRole('button', { name: 'Publikasikan versi 1' }).click();
+    await page.getByRole('button', { name: 'Publikasikan versi 1…' }).click();
+    // Dialog konfirmasi memuat ringkasan dampak (UX-009).
+    const dialog = page.getByRole('dialog', { name: 'Publikasikan versi 1?' });
+    await expect(dialog).toContainText('Catatan rilis: Rilis awal');
+    await expectNoA11yViolations(page);
+    await dialog
+        .getByRole('button', { name: 'Ya, publikasikan versi 1' })
+        .click();
     await expect(
         page.getByRole('heading', { name: 'Field versi terbit v1' }),
     ).toBeVisible();

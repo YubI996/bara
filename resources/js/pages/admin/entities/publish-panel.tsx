@@ -1,5 +1,6 @@
-import { Form, router } from '@inertiajs/react';
+import { useState } from 'react';
 import EntityController from '@/actions/App/Modules/Metadata/Http/Controllers/EntityController';
+import { ConfirmAction } from '@/components/confirm-action';
 import { Field } from '@/components/form/field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,12 @@ export function PublishPanel({
     const needsReview =
         report.requires_privacy_review && privacyReviewedAt === null;
     const ready = report.can_publish && !needsReview;
+    const [note, setNote] = useState('');
+    const count = (kind: FieldChange['kind']) =>
+        report.changes.filter((c) => c.kind === kind).length;
+    const migrations = report.changes.filter(
+        (c) => c.category === 'migration',
+    ).length;
 
     return (
         <section
@@ -125,66 +132,90 @@ export function PublishPanel({
                             : 'Draft memuat perubahan field data pribadi (UU 27/2022). Pejabat PDP harus menyetujui sebelum publikasi. Persetujuan batal bila draft diubah lagi.'}
                     </p>
                     {!privacyReviewedAt && can.review_privacy && (
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            className="min-h-11 md:min-h-9"
-                            onClick={() =>
-                                router.post(
-                                    EntityController.reviewPrivacy.url(entity),
-                                    {},
-                                    { preserveScroll: true },
-                                )
-                            }
+                        <ConfirmAction
+                            trigger="Setujui field data pribadi…"
+                            triggerVariant="secondary"
+                            title={`Setujui data pribadi pada draft v${version}?`}
+                            description="Persetujuan ini tercatat atas nama Anda sebagai Pejabat PDP (UU 27/2022) dan batal bila draft diubah lagi. Periksa daftar perubahan berikut."
+                            confirmLabel="Ya, saya setujui"
+                            processingLabel="Menyimpan persetujuan…"
+                            destructive={false}
+                            method="post"
+                            url={EntityController.reviewPrivacy.url(entity)}
                         >
-                            Setujui field data pribadi
-                        </Button>
+                            <ul className="max-h-60 list-disc space-y-1 overflow-y-auto pl-5 text-sm">
+                                {report.changes.map((c) => (
+                                    <li key={c.field_key}>
+                                        {kindLabel[c.kind]}: {c.label} (
+                                        <span className="font-mono">
+                                            {c.code}
+                                        </span>
+                                        )
+                                    </li>
+                                ))}
+                            </ul>
+                        </ConfirmAction>
                     )}
                 </div>
             )}
 
             {can.publish && (
-                <Form
-                    {...EntityController.publish.form(entity)}
-                    options={{ preserveScroll: true }}
-                    className="space-y-3"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            {errors.publish && (
-                                <p
-                                    role="alert"
-                                    className="font-medium text-red-800 dark:text-red-200"
-                                >
-                                    {errors.publish}
-                                </p>
-                            )}
-                            <Field
-                                id="note"
-                                label="Catatan rilis"
-                                hint="Ringkasan perubahan untuk riwayat versi."
-                                error={errors.note}
-                            >
-                                {(aria) => (
-                                    <Input
-                                        {...aria}
-                                        name="note"
-                                        maxLength={500}
-                                        className="h-11 md:h-9"
-                                    />
+                <div className="space-y-3">
+                    <Field
+                        id="note"
+                        label="Catatan rilis"
+                        hint="Ringkasan perubahan untuk riwayat versi."
+                    >
+                        {(aria) => (
+                            <Input
+                                {...aria}
+                                name="note"
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                maxLength={500}
+                                className="h-11 md:h-9"
+                            />
+                        )}
+                    </Field>
+                    {ready ? (
+                        <ConfirmAction
+                            trigger={`Publikasikan versi ${version}…`}
+                            triggerVariant="default"
+                            title={`Publikasikan versi ${version}?`}
+                            description="Versi terbit tidak dapat diubah dan langsung berlaku untuk semua operator."
+                            confirmLabel={`Ya, publikasikan versi ${version}`}
+                            processingLabel="Mempublikasikan…"
+                            destructive={false}
+                            method="post"
+                            url={EntityController.publish.url(entity)}
+                            data={{ note }}
+                        >
+                            <ul className="list-disc space-y-1 pl-5 text-sm">
+                                <li>{count('added')} field ditambah</li>
+                                <li>{count('modified')} field diubah</li>
+                                <li>{count('removed')} field dihapus</li>
+                                {migrations > 0 && (
+                                    <li className="font-medium">
+                                        {migrations} perubahan memigrasi data
+                                        lama di latar belakang
+                                    </li>
                                 )}
-                            </Field>
-                            <Button
-                                type="submit"
-                                disabled={processing || !ready}
-                                aria-describedby="publish-title"
-                                className="min-h-11 md:min-h-9"
-                            >
-                                Publikasikan versi {version}
-                            </Button>
-                        </>
+                                <li>
+                                    Catatan rilis: {note.trim() || '(kosong)'}
+                                </li>
+                            </ul>
+                        </ConfirmAction>
+                    ) : (
+                        <Button
+                            type="button"
+                            disabled
+                            aria-describedby="publish-title"
+                            className="min-h-11 md:min-h-9"
+                        >
+                            Publikasikan versi {version}
+                        </Button>
                     )}
-                </Form>
+                </div>
             )}
         </section>
     );

@@ -18,6 +18,7 @@ export default function CreateEntity({ application, visibilities }: Props) {
                 />
                 <EntityForm
                     action={EntityController.store.form(application)}
+                    cancelHref={ApplicationController.show.url(application)}
                     visibilities={visibilities}
                     submitLabel="Buat entity"
                 />
@@ -29,6 +30,6 @@ export default function CreateEntity({ application, visibilities }: Props) {
 CreateEntity.layout = {
     breadcrumbs: [
         { title: 'Aplikasi', href: ApplicationController.index() },
-        { title: 'Tambah entity', href: '#' },
+        { title: 'Tambah entity' },
     ],
 };

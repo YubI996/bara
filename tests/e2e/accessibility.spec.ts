@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { adminStorageState, expectNoA11yViolations } from './helpers';
+import { admin, adminStorageState, expectNoA11yViolations } from './helpers';
 
 test.describe('aksesibilitas halaman publik', () => {
     test('halaman login lolos WCAG 2.2 AA', async ({ page }) => {
@@ -14,11 +14,18 @@ test.describe('aksesibilitas halaman publik', () => {
     test('pesan error login dapat dibaca dan lolos WCAG', async ({ page }) => {
         await page.goto('/login');
         await page.getByLabel('Alamat email').fill('salah@e2e.test');
-        await page.getByLabel('Password', { exact: true }).fill('salah-sekali');
+        await page.getByLabel(/^Kata sandi/).fill('salah-sekali');
         await page.getByRole('button', { name: 'Masuk' }).click();
-        await expect(
-            page.getByText('Email atau password tidak sesuai.'),
-        ).toBeVisible();
+        // Ringkasan error (role=alert) menerima fokus dan menaut ke field (A11Y-003).
+        const summary = page.getByRole('alert');
+        await expect(summary).toContainText(
+            'Alamat email atau kata sandi tidak sesuai.',
+        );
+        await expect(summary).toBeFocused();
+        await expect(page.getByLabel(/^Alamat email/)).toHaveAttribute(
+            'aria-invalid',
+            'true',
+        );
         await expectNoA11yViolations(page);
     });
 });
@@ -135,5 +142,62 @@ test.describe('manajemen organisasi', () => {
         await page.getByLabel(/Unit induk/).focus();
         await page.keyboard.press('Tab');
         await expect(page.getByLabel(/^Kode/)).toBeFocused();
+    });
+});
+
+test.describe('halaman umum setelah masuk', () => {
+    test.use({ storageState: adminStorageState });
+
+    test('skip link menjadi tab pertama dan melompat ke konten utama', async ({
+        page,
+    }) => {
+        await page.goto('/dashboard');
+        await page.keyboard.press('Tab');
+        const skip = page.getByRole('link', {
+            name: 'Langsung ke konten utama',
+        });
+        await expect(skip).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(page).toHaveURL(/#main-content$/);
+    });
+
+    test('dasbor, pengaturan, dan halaman 404 lolos WCAG 2.2 AA', async ({
+        page,
+    }) => {
+        await page.goto('/dashboard');
+        await expect(
+            page.getByRole('heading', { level: 1, name: 'Dasbor' }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('link', { name: /^Data/ }).first(),
+        ).toBeVisible();
+        await expectNoA11yViolations(page);
+
+        for (const path of [
+            '/settings/profile',
+            '/settings/security',
+            '/settings/appearance',
+        ]) {
+            await page.goto(path);
+            // Halaman keamanan meminta konfirmasi kata sandi terlebih dahulu.
+            if (page.url().includes('confirm-password')) {
+                await expectNoA11yViolations(page);
+                await page.getByLabel(/^Kata sandi/).fill(admin.password);
+                await page
+                    .getByRole('button', { name: 'Konfirmasi kata sandi' })
+                    .click();
+                await page.waitForURL(`**${path}`);
+            }
+            await expect(
+                page.getByRole('heading', { level: 1, name: 'Pengaturan' }),
+            ).toBeVisible();
+            await expectNoA11yViolations(page);
+        }
+
+        await page.goto('/apps/tidak_ada/entity_x');
+        await expect(
+            page.getByRole('heading', { name: 'Halaman tidak ditemukan' }),
+        ).toBeVisible();
+        await expectNoA11yViolations(page);
     });
 });

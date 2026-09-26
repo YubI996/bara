@@ -5,7 +5,7 @@ import { admin, adminStorageState } from './helpers';
 setup('login sebagai admin', async ({ page }) => {
     await page.goto('/login');
     await page.getByLabel('Alamat email').fill(admin.email);
-    await page.getByLabel('Password', { exact: true }).fill(admin.password);
+    await page.getByLabel(/^Kata sandi/).fill(admin.password);
     await page.getByRole('button', { name: 'Masuk' }).click();
     await page.waitForURL('**/two-factor-challenge');
     await page.getByRole('button', { name: /kode pemulihan/i }).click();

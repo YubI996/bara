@@ -1,8 +1,45 @@
+import type { MouseEvent } from 'react';
 import { useEffect, useRef } from 'react';
 
 /** Kunci error Laravel (config.options.0.value) → id elemen (config_options_0_value). */
 export function fieldId(key: string): string {
     return key.replace(/\./g, '_');
+}
+
+/**
+ * Error bersarang (data.tags.0) sering tidak punya elemen sendiri: cari id terpanjang yang ada
+ * (data_tags_0 → data_tags → data), lalu fokus ke sana (A11Y-004).
+ */
+function targetId(key: string): string {
+    const parts = key.split('.');
+    if (typeof document !== 'undefined') {
+        for (let n = parts.length; n > 0; n--) {
+            const id = parts.slice(0, n).join('_');
+            if (document.getElementById(id)) {
+                return id;
+            }
+        }
+    }
+
+    return fieldId(key);
+}
+
+function focusField(event: MouseEvent<HTMLAnchorElement>, key: string) {
+    const target = document.getElementById(targetId(key));
+    if (!target) {
+        return;
+    }
+    event.preventDefault();
+    target.scrollIntoView({ block: 'center' });
+    // Grup (fieldset) tidak bisa difokus; fokus ke kontrol pertamanya.
+    const focusable = target.matches(
+        'input, select, textarea, button, [tabindex]',
+    )
+        ? target
+        : target.querySelector<HTMLElement>(
+              'input, select, textarea, button, [tabindex]',
+          );
+    (focusable ?? target).focus();
 }
 
 type Props = {
@@ -47,7 +84,8 @@ export function ErrorSummary({ errors, labels }: Props) {
                 {entries.map(([field, message]) => (
                     <li key={field}>
                         <a
-                            href={`#${fieldId(field)}`}
+                            href={`#${targetId(field)}`}
+                            onClick={(event) => focusField(event, field)}
                             className="underline underline-offset-4"
                         >
                             {labels[field] ??

@@ -2,14 +2,16 @@ export default function Heading({
     title,
     description,
     variant = 'default',
+    as: Tag = 'h2',
 }: {
     title: string;
     description?: string;
     variant?: 'default' | 'small';
+    as?: 'h1' | 'h2';
 }) {
     return (
         <header className={variant === 'small' ? '' : 'mb-8 space-y-0.5'}>
-            <h2
+            <Tag
                 className={
                     variant === 'small'
                         ? 'mb-0.5 text-base font-medium'
@@ -17,7 +19,7 @@ export default function Heading({
                 }
             >
                 {title}
-            </h2>
+            </Tag>
             {description && (
                 <p className="text-sm text-muted-foreground">{description}</p>
             )}

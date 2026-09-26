@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import { ErrorSummary } from '@/components/form/error-summary';
 import { Field } from '@/components/form/field';
 import { NativeSelect } from '@/components/form/native-select';
@@ -18,6 +18,8 @@ const labels: Record<string, string> = {
 
 type Props = {
     action: RouteFormDefinition<'post' | 'put'>;
+    /** Tujuan tombol Batal (halaman induk), UX-013. */
+    cancelHref?: string;
     owners: ParentOption[];
     statuses: Option[];
     application?: ApplicationSummary;
@@ -26,6 +28,7 @@ type Props = {
 
 export function ApplicationForm({
     action,
+    cancelHref,
     owners,
     statuses,
     application,
@@ -148,13 +151,24 @@ export function ApplicationForm({
                         )}
                     </Field>
 
-                    <Button
-                        type="submit"
-                        disabled={processing}
-                        className="min-h-11 md:min-h-9"
-                    >
-                        {processing ? 'Menyimpan…' : submitLabel}
-                    </Button>
+                    <div className="flex flex-wrap gap-3">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="min-h-11 md:min-h-9"
+                        >
+                            {processing ? 'Menyimpan…' : submitLabel}
+                        </Button>
+                        {cancelHref && (
+                            <Button
+                                asChild
+                                variant="secondary"
+                                className="min-h-11 md:min-h-9"
+                            >
+                                <Link href={cancelHref}>Batal</Link>
+                            </Button>
+                        )}
+                    </div>
                 </>
             )}
         </Form>

@@ -92,6 +92,7 @@ jobs:
         run: |
           npm run check
           npm run types:check
+          npm run check:contrast
 
       - name: Unit, feature & architecture tests
         run: php artisan test

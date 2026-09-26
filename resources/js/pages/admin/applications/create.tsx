@@ -17,6 +17,7 @@ export default function CreateApplication({ owners, statuses }: Props) {
                 />
                 <ApplicationForm
                     action={ApplicationController.store.form()}
+                    cancelHref={ApplicationController.index.url()}
                     owners={owners}
                     statuses={statuses}
                     submitLabel="Buat aplikasi"

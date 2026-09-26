@@ -1,5 +1,5 @@
-// Components
 import { Form, Head } from '@inertiajs/react';
+import { StatusMessage } from '@/components/form/status-message';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -12,8 +12,11 @@ export default function VerifyEmail({ status }: { status?: string }) {
             <Head title="Verifikasi email" />
 
             {status === 'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    Tautan verifikasi baru sudah dikirim ke alamat email Anda.
+                <div className="mb-4">
+                    <StatusMessage>
+                        Tautan verifikasi baru sudah dikirim ke alamat email
+                        Anda.
+                    </StatusMessage>
                 </div>
             )}
 

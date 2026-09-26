@@ -1,7 +1,9 @@
-import { Link, router } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import FieldController from '@/actions/App/Modules/Metadata/Http/Controllers/FieldController';
+import { ConfirmAction } from '@/components/confirm-action';
 import { Button } from '@/components/ui/button';
+import { useRouterAction } from '@/hooks/use-router-action';
 import type { EntitySummary, FieldSummary } from '@/types';
 
 type Props = {
@@ -21,26 +23,14 @@ function flags(field: FieldSummary): string {
 }
 
 export function FieldTable({ entity, fields, caption, editable }: Props) {
+    // Satu permintaan pada satu waktu: klik berulang saat jaringan lambat tidak menumpuk (UX-010).
+    const { run, processing } = useRouterAction();
     const move = (field: FieldSummary, direction: 'up' | 'down') => {
         if (field.id === null) return;
-        router.post(
+        run(
+            'post',
             FieldController.move.url({ entity: entity.id, field: field.id }),
-            { direction },
-            { preserveScroll: true },
-        );
-    };
-
-    const remove = (field: FieldSummary) => {
-        if (field.id === null) return;
-        router.delete(
-            FieldController.destroy.url({ entity: entity.id, field: field.id }),
-            {
-                preserveScroll: true,
-                onBefore: () =>
-                    window.confirm(
-                        `Hapus field “${field.label}” dari draft? Data lama tetap tersimpan setelah versi baru terbit.`,
-                    ),
-            },
+            { data: { direction } },
         );
     };
 
@@ -127,7 +117,7 @@ export function FieldTable({ entity, fields, caption, editable }: Props) {
                                             variant="ghost"
                                             size="icon"
                                             className="size-11 md:size-9"
-                                            disabled={index === 0}
+                                            disabled={index === 0 || processing}
                                             onClick={() => move(field, 'up')}
                                             aria-label={`Naikkan ${field.label}`}
                                         >
@@ -139,7 +129,8 @@ export function FieldTable({ entity, fields, caption, editable }: Props) {
                                             size="icon"
                                             className="size-11 md:size-9"
                                             disabled={
-                                                index === fields.length - 1
+                                                index === fields.length - 1 ||
+                                                processing
                                             }
                                             onClick={() => move(field, 'down')}
                                             aria-label={`Turunkan ${field.label}`}
@@ -159,18 +150,28 @@ export function FieldTable({ entity, fields, caption, editable }: Props) {
                                                 {field.label}
                                             </span>
                                         </Link>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            className="min-h-11 text-red-700 hover:text-red-800 md:min-h-9 dark:text-red-300"
-                                            onClick={() => remove(field)}
-                                        >
-                                            Hapus
-                                            <span className="sr-only">
-                                                {' '}
-                                                {field.label}
-                                            </span>
-                                        </Button>
+                                        <ConfirmAction
+                                            trigger={
+                                                <>
+                                                    Hapus
+                                                    <span className="sr-only">
+                                                        {' '}
+                                                        {field.label}
+                                                    </span>
+                                                </>
+                                            }
+                                            triggerVariant="outline"
+                                            triggerClassName="min-h-11 text-red-700 md:min-h-9 dark:text-red-300"
+                                            title={`Hapus field “${field.label}” dari draft?`}
+                                            description="Field hilang dari form setelah versi baru terbit. Data lama tetap tersimpan dan tampil sebagai data historis."
+                                            confirmLabel="Ya, hapus field"
+                                            processingLabel="Menghapus…"
+                                            method="delete"
+                                            url={FieldController.destroy.url({
+                                                entity: entity.id,
+                                                field: field.id,
+                                            })}
+                                        />
                                     </div>
                                 </td>
                             )}

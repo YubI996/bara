@@ -1,4 +1,4 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, setLayoutProps } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import RecordController from '@/actions/App/Modules/Data/Http/Controllers/RecordController';
 import { NativeSelect } from '@/components/form/native-select';
@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { usePemdaTimezone } from '@/hooks/use-pemda';
 import { formatValue } from '@/runtime/format';
 import type { RuntimeEntity, RuntimeField, RuntimeValues } from '@/types';
 
@@ -29,10 +30,18 @@ export default function RecordIndex({
     can,
 }: Props) {
     const route = { app: entity.application_code, entity: entity.code };
+    setLayoutProps({
+        breadcrumbs: [
+            { title: 'Data', href: RecordController.home() },
+            { title: entity.name_plural },
+        ],
+    });
     const columns = fields
         .filter((f) => f.in_list && f.access !== 'hidden')
         .slice(0, 4);
     const filterable = fields.filter((f) => f.filterable);
+    const timezone = usePemdaTimezone();
+    const filtered = filters.q !== '' || Object.keys(filters.f).length > 0;
     const pageLink = (cursor: string) =>
         RecordController.index(route, {
             query: { q: filters.q || undefined, f: filters.f, cursor },
@@ -112,14 +121,33 @@ export default function RecordIndex({
                 </Form>
 
                 {rows.length === 0 ? (
-                    <p
+                    <div
                         role="status"
-                        className="rounded-lg border border-dashed p-6 text-center"
+                        className="grid justify-items-center gap-3 rounded-lg border border-dashed p-6 text-center"
                     >
-                        {filters.q || Object.keys(filters.f).length > 0
-                            ? 'Tidak ada data yang cocok dengan pencarian.'
-                            : 'Belum ada data.'}
-                    </p>
+                        <p>
+                            {filtered
+                                ? 'Tidak ada data yang cocok dengan pencarian.'
+                                : `Belum ada ${entity.name_plural.toLowerCase()}.`}
+                        </p>
+                        {filtered ? (
+                            <Link
+                                href={RecordController.index(route)}
+                                className="inline-flex min-h-11 items-center underline underline-offset-4 md:min-h-9"
+                            >
+                                Hapus semua filter
+                            </Link>
+                        ) : (
+                            can.create && (
+                                <Button asChild className="min-h-11 md:min-h-9">
+                                    <Link href={RecordController.create(route)}>
+                                        <Plus aria-hidden="true" />
+                                        Tambah {entity.name} pertama
+                                    </Link>
+                                </Button>
+                            )
+                        )}
+                    </div>
                 ) : (
                     <div
                         className="overflow-x-auto rounded-lg border"
@@ -175,6 +203,7 @@ export default function RecordIndex({
                                                 {formatValue(
                                                     c,
                                                     row.values[c.code],
+                                                    timezone,
                                                 )}
                                             </td>
                                         ))}

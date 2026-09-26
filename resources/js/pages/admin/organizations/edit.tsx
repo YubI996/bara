@@ -42,6 +42,7 @@ export default function EditOrganization({
 
                 <OrganizationForm
                     action={OrganizationController.update.form(organization)}
+                    cancelHref={OrganizationController.index.url()}
                     parents={parents}
                     kinds={kinds}
                     organization={organization}
@@ -130,6 +131,6 @@ export default function EditOrganization({
 EditOrganization.layout = {
     breadcrumbs: [
         { title: 'Organisasi', href: OrganizationController.index() },
-        { title: 'Ubah unit', href: '#' },
+        { title: 'Ubah unit' },
     ],
 };

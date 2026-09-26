@@ -1,9 +1,9 @@
 import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
+import { ErrorSummary } from '@/components/form/error-summary';
+import { Field } from '@/components/form/field';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { update } from '@/routes/password';
 
@@ -13,75 +13,89 @@ type Props = {
     passwordRules: string;
 };
 
+const LABELS = {
+    email: 'Alamat email',
+    password: 'Kata sandi baru',
+    password_confirmation: 'Ulangi kata sandi baru',
+};
+
 export default function ResetPassword({ token, email, passwordRules }: Props) {
     return (
         <>
-            <Head title="Atur ulang password" />
+            <Head title="Atur ulang kata sandi" />
 
             <Form
                 {...update.form()}
                 transform={(data) => ({ ...data, token, email })}
                 resetOnSuccess={['password', 'password_confirmation']}
+                noValidate
             >
                 {({ processing, errors }) => (
                     <div className="grid gap-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                name="email"
-                                autoComplete="email"
-                                value={email}
-                                className="mt-1 block w-full"
-                                readOnly
-                            />
-                            <InputError
-                                message={errors.email}
-                                className="mt-2"
-                            />
-                        </div>
+                        <ErrorSummary errors={errors} labels={LABELS} />
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
-                            <PasswordInput
-                                id="password"
-                                name="password"
-                                autoComplete="new-password"
-                                className="mt-1 block w-full"
-                                autoFocus
-                                placeholder="Password"
-                                passwordrules={passwordRules}
-                            />
-                            <InputError message={errors.password} />
-                        </div>
+                        <Field
+                            id="email"
+                            label={LABELS.email}
+                            required
+                            error={errors.email}
+                        >
+                            {(aria) => (
+                                <Input
+                                    {...aria}
+                                    type="email"
+                                    name="email"
+                                    autoComplete="email"
+                                    value={email}
+                                    readOnly
+                                />
+                            )}
+                        </Field>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">
-                                Konfirmasi password
-                            </Label>
-                            <PasswordInput
-                                id="password_confirmation"
-                                name="password_confirmation"
-                                autoComplete="new-password"
-                                className="mt-1 block w-full"
-                                placeholder="Konfirmasi password"
-                                passwordrules={passwordRules}
-                            />
-                            <InputError
-                                message={errors.password_confirmation}
-                                className="mt-2"
-                            />
-                        </div>
+                        <Field
+                            id="password"
+                            label={LABELS.password}
+                            required
+                            hint="Minimal 12 karakter."
+                            error={errors.password}
+                        >
+                            {(aria) => (
+                                <PasswordInput
+                                    {...aria}
+                                    name="password"
+                                    autoComplete="new-password"
+                                    autoFocus
+                                    passwordrules={passwordRules}
+                                />
+                            )}
+                        </Field>
+
+                        <Field
+                            id="password_confirmation"
+                            label={LABELS.password_confirmation}
+                            required
+                            error={errors.password_confirmation}
+                        >
+                            {(aria) => (
+                                <PasswordInput
+                                    {...aria}
+                                    name="password_confirmation"
+                                    autoComplete="new-password"
+                                    passwordrules={passwordRules}
+                                />
+                            )}
+                        </Field>
 
                         <Button
                             type="submit"
-                            className="mt-4 w-full"
+                            className="mt-2 w-full"
                             disabled={processing}
                             data-test="reset-password-button"
                         >
                             {processing && <Spinner />}
-                            Atur ulang password
+                            {processing
+                                ? 'Menyimpan…'
+                                : 'Atur ulang kata sandi'}
                         </Button>
                     </div>
                 )}
@@ -91,6 +105,6 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 }
 
 ResetPassword.layout = {
-    title: 'Atur ulang password',
-    description: 'Masukkan password baru Anda',
+    title: 'Atur ulang kata sandi',
+    description: 'Masukkan kata sandi baru Anda',
 };

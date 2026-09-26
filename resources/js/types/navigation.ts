@@ -3,7 +3,8 @@ import type { LucideIcon } from 'lucide-react';
 
 export type BreadcrumbItem = {
     title: string;
-    href: NonNullable<InertiaLinkProps['href']>;
+    /** Kosong untuk item terakhir (halaman saat ini). */
+    href?: NonNullable<InertiaLinkProps['href']>;
 };
 
 export type NavItem = {

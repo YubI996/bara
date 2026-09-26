@@ -68,9 +68,23 @@ Karena UI dihasilkan dari metadata, aksesibilitas juga dijaga di level metadata:
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
 | Unit komponen    | Vitest + Testing Library (`getByRole`)                                                                                   | Setiap PR                         |
 | Otomatis halaman | Playwright + `@axe-core/playwright` pada halaman runtime yang digenerate dari entity fixture berisi **semua** tipe field | Setiap PR (gagal = merge ditolak) |
-| Kontras token    | Skrip cek palet di light & dark mode                                                                                     | Setiap PR                         |
+| Kontras token    | `npm run check:contrast` (`scripts/check-contrast.mjs`): OKLCH → luminans WCAG untuk pasangan token kritis, light & dark | Setiap PR                         |
 | Manual           | Keyboard-only + NVDA (Windows) + TalkBack (Android) pada 5 alur kunci                                                    | Setiap milestone                  |
 | Pengguna awam    | Uji usability dengan operator OPD (≥ 5 orang)                                                                            | Sebelum MVP1 & MVP2               |
+
+### 3.4 Pola yang sudah diterapkan (M0–M2 + remediasi audit)
+
+| Kebutuhan                    | Implementasi                                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Fokus terlihat               | Outline global 3px `--focus` + offset 2px (`resources/css/app.css`), menang atas `outline-none` komponen shadcn                     |
+| Batas kolom form             | `--input` ≥ 3:1 terhadap latar; `--border` tetap dekoratif                                                                           |
+| Form                         | `Field` + `ErrorSummary` di semua form (termasuk login/pengaturan); ringkasan menaut ke field induk untuk error bersarang            |
+| Aksi berdampak               | `ConfirmAction` (dialog + status proses + error `role=alert`) untuk hapus, buang draft, publikasi, persetujuan PDP, nonaktif 2FA     |
+| Aksi router tanpa form       | `useRouterAction`: tombol nonaktif saat proses, error server tampil sebagai toast                                                    |
+| Navigasi                     | Skip link, `aria-current` pada menu & breadcrumb, `RouteAnnouncer` (umumkan judul + fokus ke `h1`, "Memuat…" bila > 1 detik)         |
+| Waktu                        | `SessionTimeoutWarning`: dialog `alertdialog` 2 menit sebelum idle timeout server, tombol "Perpanjang sesi"                          |
+| Error HTTP                   | Halaman `errors/show` berbahasa Indonesia (403/404/429/500/503); 419 kembali ke form dengan pesan, isian tetap ada                   |
+| Zona waktu & angka           | Tanggal-waktu memakai zona Pemda (shared prop `pemda.timezone`); isian angka memakai koma desimal tanpa pemisah ribuan               |
 
 ## 4. Desain visual
 
