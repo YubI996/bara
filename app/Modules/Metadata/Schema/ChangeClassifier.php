@@ -13,8 +13,8 @@ use App\Modules\Metadata\Contracts\FieldTypeRegistry;
  */
 final readonly class ChangeClassifier
 {
-    /** Perubahan tipe yang datanya bisa dikonversi otomatis. */
-    private const array COMPATIBLE_TYPE_CHANGES = [
+    /** Perubahan tipe yang datanya dikonversi otomatis oleh MigrateRecordData (lihat MigrationPlanner). */
+    public const array COMPATIBLE_TYPE_CHANGES = [
         'integer' => ['decimal', 'money'],
         'decimal' => ['money'],
         'string' => ['text'],
@@ -73,7 +73,7 @@ final readonly class ChangeClassifier
 
         if ($this->types->get($field->type)->supportsDefault() && array_key_exists('default', $field->config)) {
             return new FieldChange($field->fieldKey, $field->code, $field->label, 'added', ChangeCategory::Migration, [
-                'Field wajib baru; nilai default akan diisikan ke data lama.',
+                'Field wajib baru; nilai default diisikan ke data lama di latar belakang setelah publikasi.',
             ]);
         }
 
@@ -92,7 +92,7 @@ final readonly class ChangeClassifier
             $from = $this->types->get($old->type)->label();
             $to = $this->types->get($new->type)->label();
             $notes[] = $compatible
-                ? [ChangeCategory::Migration, "Tipe berubah dari {$from} ke {$to}; data lama dikonversi otomatis."]
+                ? [ChangeCategory::Migration, "Tipe berubah dari {$from} ke {$to}; data lama dikonversi otomatis di latar belakang setelah publikasi."]
                 : [ChangeCategory::Blocked, "Tipe tidak bisa diubah dari {$from} ke {$to}. Buat field baru, lalu hapus yang lama."];
         }
 

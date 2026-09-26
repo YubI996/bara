@@ -141,15 +141,20 @@ final readonly class DraftValidator
 
         preg_match_all('/\{([^{}]*)\}/', $template, $matches);
         $scalar = [];
+        $sensitive = [];
         foreach ($fields as $field) {
-            if (! in_array($field->type, ['relationship', 'file', 'multi_enum', 'rich_text'], true)) {
+            if (! $field->classification->allowedInTitle()) {
+                $sensitive[$field->code] = mb_strtolower($field->classification->label());
+            } elseif (! in_array($field->type, ['relationship', 'file', 'multi_enum', 'rich_text'], true)) {
                 $scalar[$field->code] = true;
             }
         }
 
         $errors = [];
         foreach ($matches[1] as $code) {
-            if (! isset($scalar[$code])) {
+            if (isset($sensitive[$code])) {
+                $errors[] = "Template judul tidak boleh memakai {{$code}} karena field itu berklasifikasi {$sensitive[$code]}; judul tampil tanpa penyamaran di daftar, relasi, dan audit.";
+            } elseif (! isset($scalar[$code])) {
                 $errors[] = "Template judul memakai {{$code}} yang bukan kode field teks/angka/tanggal/pilihan pada entity ini.";
             }
         }

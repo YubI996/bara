@@ -90,7 +90,7 @@ final readonly class ApplicationController
 
         return Inertia::render('admin/applications/show', [
             'application' => $this->presenter->application($application),
-            'entities' => $application->entities()->orderBy('name')->get()->map(fn (Entity $entity): array => [
+            'entities' => $application->entities()->with(['publishedVersion', 'draftVersion'])->orderBy('name')->get()->map(fn (Entity $entity): array => [
                 ...$this->presenter->entity($entity),
                 'published_version' => $entity->publishedVersion?->version,
                 'draft_version' => $entity->draftVersion?->version,

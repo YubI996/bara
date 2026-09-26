@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Data\Runtime;
 
 use App\Models\User;
+use App\Modules\Metadata\Contracts\EntitySchema;
 use App\Modules\Metadata\Contracts\SchemaRepository;
 use Illuminate\Support\Str;
 
@@ -16,6 +17,8 @@ final readonly class RelationTargets
 {
     public const int OPTION_LIMIT = 200;
 
+    public const string OUT_OF_SCOPE_LABEL = '(di luar kewenangan Anda)';
+
     public function __construct(
         private ScopedRecordQuery $query,
         private SchemaRepository $schemas,
@@ -26,9 +29,15 @@ final readonly class RelationTargets
     {
         $schema = $this->schemas->publishedById($targetEntityId);
 
-        return $schema !== null
+        if ($schema === null) {
+            // Entity Core fisik (unit organisasi): hanya lewat visibilitas publik/internal.
+            return AccessScope::read([], $user->kind === 'internal');
+        }
+
+        // Lapis 1 (permission) wajib lolos; visibilitas hanya menggantikan lapis 2 (scope).
+        return $this->scopes->canView($user, $schema)
             ? $this->scopes->read($user, $schema)
-            : AccessScope::read([], $user->kind === 'internal');
+            : AccessScope::write([]);
     }
 
     /**
@@ -79,22 +88,34 @@ final readonly class RelationTargets
     }
 
     /**
-     * Judul untuk sekumpulan id (satu query, tanpa N+1).
+     * Judul target relasi sebuah record, dibatasi cakupan baca PEMBACA pada entity target.
+     * Target di luar cakupan diberi label netral, tanpa judul aslinya. Satu query per entity
+     * target (bukan per tautan).
      *
-     * @param  list<string>  $ids
-     * @return array<string, string>
+     * @param  array<string, list<string>>  $links  field_key => target id
+     * @return array<string, string> target id => judul
      */
-    public function titles(array $ids): array
+    public function titles(User $user, EntitySchema $schema, array $links): array
     {
-        $ids = array_values(array_filter(array_unique($ids), fn (string $id): bool => Str::isUuid($id)));
-
-        if ($ids === []) {
-            return [];
+        $byTarget = [];
+        foreach ($schema->fields as $field) {
+            $target = $field->configValue('target_entity_id');
+            if ($field->type === 'relationship' && is_string($target) && isset($links[$field->fieldKey])) {
+                $byTarget[$target] = [...($byTarget[$target] ?? []), ...$links[$field->fieldKey]];
+            }
         }
 
         $titles = [];
-        foreach ($this->query->titlesFor($ids) as $id => $title) {
-            $titles[$id] = $title;
+        foreach ($byTarget as $target => $ids) {
+            $ids = array_values(array_filter(array_unique($ids), fn (string $id): bool => Str::isUuid($id)));
+            if ($ids === []) {
+                continue;
+            }
+
+            $titles += $this->query->titlesFor($target, $ids, $this->scopeFor($user, $target));
+            foreach ($ids as $id) {
+                $titles[$id] ??= self::OUT_OF_SCOPE_LABEL;
+            }
         }
 
         return $titles;

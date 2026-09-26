@@ -38,21 +38,22 @@ final class DatabaseAccessChecker implements AccessChecker
         return false;
     }
 
-    public function clearance(User $user, ?string $applicationId): DataClassification
+    public function clearance(User $user, string $applicationId): DataClassification
     {
         if (! $user->is_active) {
             return DataClassification::Public;
         }
 
+        // Hanya role aplikasi ini, pada unit yang masih aktif. Role platform (dpo, auditor,
+        // platform_admin) tidak memberi clearance data runtime (ADR 0015).
         $values = $this->db->table('role_assignments as ra')
             ->join('roles as r', 'r.id', '=', 'ra.role_id')
+            ->join('core_organizations as o', 'o.id', '=', 'ra.scope_org_id')
             ->where('ra.user_id', $user->id)
+            ->where('r.application_id', $applicationId)
             ->whereRaw('ra.valid_from <= now()')
             ->whereRaw('(ra.valid_to IS NULL OR ra.valid_to > now())')
-            ->where(fn (Builder $q) => $q->whereNull('r.application_id')->when(
-                $applicationId !== null,
-                fn (Builder $q) => $q->orWhere('r.application_id', $applicationId),
-            ))
+            ->whereRaw('(o.valid_to IS NULL OR o.valid_to > CURRENT_DATE)')
             ->pluck('r.clearance');
 
         $best = DataClassification::Public;
@@ -64,6 +65,25 @@ final class DatabaseAccessChecker implements AccessChecker
         }
 
         return $best;
+    }
+
+    public function requiresTwoFactor(User $user): bool
+    {
+        if (! $user->is_active) {
+            return false;
+        }
+
+        return $this->db->table('role_assignments as ra')
+            ->join('roles as r', 'r.id', '=', 'ra.role_id')
+            ->where('ra.user_id', $user->id)
+            ->whereRaw('ra.valid_from <= now()')
+            ->whereRaw('(ra.valid_to IS NULL OR ra.valid_to > now())')
+            ->where(function (Builder $q): void {
+                $q->whereNull('r.application_id')
+                    ->orWhere('r.code', 'app_admin')
+                    ->orWhereNotIn('r.clearance', [DataClassification::Public->value, DataClassification::Internal->value]);
+            })
+            ->exists();
     }
 
     public function grants(User $user, PlatformPermission|string $permission): array

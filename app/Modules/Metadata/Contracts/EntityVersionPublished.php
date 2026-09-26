@@ -14,5 +14,7 @@ final readonly class EntityVersionPublished
         public string $entityId,
         public string $entityVersionId,
         public string $applicationId,
+        /** @var list<FieldMigration> langkah migrasi data record (kosong bila tidak ada) */
+        public array $migrations = [],
     ) {}
 }

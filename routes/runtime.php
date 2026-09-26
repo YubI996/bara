@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureTwoFactorForPrivilegedRoles;
 use App\Modules\Data\Http\Controllers\RecordController;
 use Illuminate\Support\Facades\Route;
 
 // Runtime generik: setiap entity terbit langsung punya halaman tanpa deploy (docs/06 §3).
-Route::middleware(['auth', 'verified'])
+Route::middleware(['auth', 'verified', EnsureTwoFactorForPrivilegedRoles::class])
     ->prefix('apps')
     ->name('runtime.')
     ->where(['app' => '[a-z][a-z0-9_]{1,62}', 'entity' => '[a-z][a-z0-9_]{1,62}'])

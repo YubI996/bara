@@ -111,9 +111,10 @@ function publishEntity(Entity $entity, ?User $publisher = null): EntityVersion
 }
 
 /** User dengan role aplikasi (app_admin/operator/viewer) pada scope unit tertentu. */
-function userWithAppRole(Application $application, string $roleCode, ?Organization $scope = null, bool $includeDescendants = true): User
+function userWithAppRole(Application $application, string $roleCode, ?Organization $scope = null, bool $includeDescendants = true, bool $twoFactor = false): User
 {
-    $user = User::factory()->create(['primary_org_id' => ($scope ?? rootOrganization())->id]);
+    $factory = User::factory();
+    $user = ($twoFactor ? $factory->withTwoFactor() : $factory)->create(['primary_org_id' => ($scope ?? rootOrganization())->id]);
     $roleId = DB::table('roles')->where('application_id', $application->id)->where('code', $roleCode)->value('id');
 
     if (! is_string($roleId)) {

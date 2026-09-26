@@ -17,6 +17,15 @@ final readonly class ScopeFactory
         return AccessScope::read($this->access->grants($user, $schema->permission('view')), $user->kind === 'internal');
     }
 
+    /**
+     * Cakupan baca TANPA visibilitas: hanya unit yang di-grant role pembaca. Clearance role
+     * hanya berlaku untuk record di dalam cakupan ini (ADR 0015).
+     */
+    public function granted(User $user, EntitySchema $schema): AccessScope
+    {
+        return AccessScope::write($this->access->grants($user, $schema->permission('view')));
+    }
+
     /** @param  'create'|'update'|'delete'|'export'  $action */
     public function write(User $user, EntitySchema $schema, string $action): AccessScope
     {

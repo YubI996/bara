@@ -200,7 +200,8 @@ test('field data pribadi disembunyikan dari operator dan tidak terhapus saat ope
     app(ReviewDraftPrivacy::class)->execute($this->entity->refresh(), userWithRole('dpo'));
     publishEntity($this->entity);
 
-    $dpoEditor = userWithAppRole($this->monev, 'operator', $this->dinkes);
+    // Clearance di atas internal wajib 2FA di area data (ADR 0013).
+    $dpoEditor = userWithAppRole($this->monev, 'operator', $this->dinkes, twoFactor: true);
     DB::table('roles')->insert(['code' => 'petugas_pdp', 'application_id' => $this->monev->id, 'name' => 'Petugas data pribadi', 'clearance' => 'personal_specific', 'is_system' => false]);
     DB::table('role_assignments')->insert(['user_id' => $dpoEditor->id, 'role_id' => DB::table('roles')->where('code', 'petugas_pdp')->value('id'), 'scope_org_id' => $this->dinkes->id]);
 

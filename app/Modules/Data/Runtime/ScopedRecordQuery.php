@@ -37,19 +37,17 @@ final readonly class ScopedRecordQuery
     }
 
     /**
-     * Judul objek untuk tampilan relasi. Hanya dipanggil untuk id yang SUDAH lolos scope
-     * (tautan yang tersimpan divalidasi saat ditulis), dan hanya mengembalikan judul.
+     * Judul objek entity target untuk tampilan relasi, terbatas cakupan akses pembaca.
      *
      * @param  list<string>  $ids
      * @return array<string, string>
      */
-    public function titlesFor(array $ids): array
+    public function titlesFor(string $entityId, array $ids, AccessScope $scope): array
     {
-        $rows = $this->db->table('objects as o')
+        $rows = $this->objects($entityId, $scope)
             ->leftJoin('records as r', 'r.id', '=', 'o.id')
             ->leftJoin('core_organizations as c', 'c.id', '=', 'o.id')
             ->whereIn('o.id', $ids)
-            ->whereNull('o.deleted_at')
             ->get(['o.id', 'r.title', 'c.name']);
 
         $titles = [];

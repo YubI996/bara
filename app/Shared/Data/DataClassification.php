@@ -43,6 +43,15 @@ enum DataClassification: string
         return $this === self::Personal || $this === self::PersonalSpecific;
     }
 
+    /**
+     * Judul record tampil di daftar, label relasi, dan audit tanpa lewat FieldGate, jadi
+     * hanya nilai publik/internal yang boleh masuk ke sana.
+     */
+    public function allowedInTitle(): bool
+    {
+        return $this->rank() <= self::Internal->rank();
+    }
+
     /** @return list<array{value: string, label: string}> */
     public static function options(): array
     {

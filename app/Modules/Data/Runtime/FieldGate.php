@@ -21,6 +21,15 @@ final readonly class FieldGate
 
     public function __construct(private DataClassification $clearance) {}
 
+    /**
+     * Gate dengan clearance paling tinggi $max. Dipakai untuk record yang hanya terlihat lewat
+     * visibilitas (di luar grant unit pembaca): clearance role tidak berlaku di sana (ADR 0015).
+     */
+    public function capped(DataClassification $max): self
+    {
+        return $this->clearance->rank() > $max->rank() ? new self($max) : $this;
+    }
+
     public function clearance(): DataClassification
     {
         return $this->clearance;

@@ -23,8 +23,15 @@ interface AccessChecker
     public function grants(User $user, PlatformPermission|string $permission): array;
 
     /**
-     * Klasifikasi data tertinggi yang boleh dibaca user dalam aplikasi ini
-     * (maksimum clearance dari role platform dan role aplikasi yang aktif).
+     * Klasifikasi data tertinggi yang boleh dibaca user dalam aplikasi ini: maksimum clearance
+     * role aplikasi yang aktif pada unit aktif. Role platform tidak dihitung (ADR 0015).
+     * Pemanggil wajib membatasinya ke internal untuk record di luar grant pembaca.
      */
-    public function clearance(User $user, ?string $applicationId): DataClassification;
+    public function clearance(User $user, string $applicationId): DataClassification;
+
+    /**
+     * Wajib 2FA di area data (ADR 0013): pemegang role platform, app_admin, atau role dengan
+     * clearance di atas internal yang masih aktif.
+     */
+    public function requiresTwoFactor(User $user): bool;
 }

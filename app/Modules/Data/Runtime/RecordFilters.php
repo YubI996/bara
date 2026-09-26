@@ -28,6 +28,24 @@ final class RecordFilters
     }
 
     /**
+     * Filter pada field di atas internal hanya boleh dijalankan di dalam unit yang di-grant,
+     * supaya pencocokan nilai tidak menjadi oracle untuk record unit lain (ADR 0015).
+     *
+     * @param  array<mixed>  $input
+     */
+    public function needsGrantedScope(EntitySchema $schema, array $input): bool
+    {
+        foreach ($schema->fields as $field) {
+            $value = $input[$field->code] ?? null;
+            if (is_string($value) && $value !== '' && ! $field->classification->allowedInTitle()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param  array<mixed>  $input  f[kode] => nilai
      * @return array<string, string> filter yang benar-benar diterapkan
      */

@@ -10,6 +10,7 @@ use App\Modules\Data\Actions\CreateRecord;
 use App\Modules\Data\Actions\DeleteRecord;
 use App\Modules\Data\Actions\UpdateRecord;
 use App\Modules\Data\Http\Presenters\RecordPresenter;
+use App\Modules\Data\Runtime\AccessScope;
 use App\Modules\Data\Runtime\FieldGate;
 use App\Modules\Data\Runtime\FileStore;
 use App\Modules\Data\Runtime\JsonData;
@@ -23,6 +24,7 @@ use App\Modules\Metadata\Contracts\EntitySchema;
 use App\Modules\Metadata\Contracts\SchemaRepository;
 use App\Modules\Organization\Contracts\OrganizationDirectory;
 use App\Modules\Organization\Contracts\OrganizationSummary;
+use App\Shared\Data\DataClassification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
@@ -78,17 +80,20 @@ final readonly class RecordController
         $user = $this->user($request);
         $schema = $this->viewable($user, $app, $entity);
         $gate = $this->gate($user, $schema);
+        $granted = $this->scopes->granted($user, $schema);
         $search = $request->string('q')->trim()->limit(100, '')->toString();
-
-        $query = $this->query->records($schema->entityId, $this->scopes->read($user, $schema));
-        $this->filters->search($query, $search);
         $f = $request->input('f', []);
-        $filters = $this->filters->apply($query, $schema, $gate, is_array($f) ? $f : []);
+        $f = is_array($f) ? $f : [];
+
+        $scope = $this->filters->needsGrantedScope($schema, $f) ? $granted : $this->scopes->read($user, $schema);
+        $query = $this->query->records($schema->entityId, $scope);
+        $this->filters->search($query, $search);
+        $filters = $this->filters->apply($query, $schema, $gate, $f);
 
         $page = $query
             ->orderByDesc('r.created_at')
             ->orderByDesc('r.id')
-            ->cursorPaginate(config()->integer('bara.records.page_size'), ['r.id', 'r.title', 'r.data', 'r.created_at', 'o.owner_org_id'], 'cursor')
+            ->cursorPaginate(config()->integer('bara.records.page_size'), ['r.id', 'r.title', 'r.data', 'r.created_at', 'o.owner_org_id', 'o.owner_path'], 'cursor')
             ->withQueryString();
 
         $rows = [];
@@ -99,7 +104,7 @@ final readonly class RecordController
             $rows[] = [
                 'id' => $row->id,
                 'title' => $row->title,
-                'values' => $this->presenter->values($schema, $gate, JsonData::decode($row->data ?? null), listOnly: true),
+                'values' => $this->presenter->values($schema, $this->rowGate($gate, $granted, $row), JsonData::decode($row->data ?? null), listOnly: true),
             ];
         }
 
@@ -142,7 +147,7 @@ final readonly class RecordController
         $user = $this->user($request);
         $schema = $this->viewable($user, $app, $entity);
         $row = $this->find($user, $schema, $record);
-        $gate = $this->gate($user, $schema);
+        $gate = $this->rowGate($this->gate($user, $schema), $this->scopes->granted($user, $schema), $row);
         $data = JsonData::decode($row->data ?? null);
         $links = $this->writer->links($schema, $record);
 
@@ -152,7 +157,7 @@ final readonly class RecordController
             'record' => [
                 'id' => $record,
                 'title' => $row->title ?? '',
-                'values' => $this->presenter->values($schema, $gate, $data, $links, $this->targets->titles(array_merge([], ...array_values($links))), $this->fileInfo($record, $app, $entity)),
+                'values' => $this->presenter->values($schema, $gate, $data, $links, $this->targets->titles($user, $schema, $links), $this->fileInfo($record, $app, $entity)),
                 'owner_name' => is_string($row->owner_org_id ?? null) ? $this->organizations->find($row->owner_org_id)?->name : null,
                 'created_at' => $row->created_at ?? null,
                 'updated_at' => $row->updated_at ?? null,
@@ -171,14 +176,14 @@ final readonly class RecordController
         $schema = $this->viewable($user, $app, $entity);
         $row = $this->find($user, $schema, $record);
         $this->ensure($this->covers($user, $schema, 'update', $row));
-        $gate = $this->gate($user, $schema);
+        $gate = $this->rowGate($this->gate($user, $schema), $this->scopes->granted($user, $schema), $row);
         $links = $this->writer->links($schema, $record);
 
         return $this->form($user, $schema, [
             'id' => $record,
             'title' => $row->title ?? '',
             'lock_version' => is_numeric($row->lock_version ?? null) ? (int) $row->lock_version : 0,
-            'values' => $this->presenter->values($schema, $gate, JsonData::decode($row->data ?? null), $links, $this->targets->titles(array_merge([], ...array_values($links))), $this->fileInfo($record, $app, $entity)),
+            'values' => $this->presenter->values($schema, $gate, JsonData::decode($row->data ?? null), $links, $this->targets->titles($user, $schema, $links), $this->fileInfo($record, $app, $entity)),
         ]);
     }
 
@@ -213,13 +218,13 @@ final readonly class RecordController
     {
         $user = $this->user($request);
         $schema = $this->viewable($user, $app, $entity);
-        $this->find($user, $schema, $record);
+        $row = $this->find($user, $schema, $record);
         $info = $this->files->find($file, $record);
         $field = $info === null ? null : $schema->fieldByKey($info['field_key']);
 
         // Berkas hanya boleh diunduh bila field-nya terlihat penuh dan sudah lolos pindai.
         if ($info === null || $field === null || ! $info['clean']
-            || $this->gate($user, $schema)->access($field) !== FieldGate::VISIBLE) {
+            || $this->rowGate($this->gate($user, $schema), $this->scopes->granted($user, $schema), $row)->access($field) !== FieldGate::VISIBLE) {
             throw new NotFoundHttpException;
         }
 
@@ -295,6 +300,14 @@ final readonly class RecordController
     private function gate(User $user, EntitySchema $schema): FieldGate
     {
         return new FieldGate($this->access->clearance($user, $schema->applicationId));
+    }
+
+    /** Record di luar unit yang di-grant (terlihat lewat visibilitas saja) dibaca paling tinggi sebagai internal. */
+    private function rowGate(FieldGate $gate, AccessScope $granted, object $row): FieldGate
+    {
+        return is_string($row->owner_path ?? null) && $granted->covers($row->owner_path, 'private')
+            ? $gate
+            : $gate->capped(DataClassification::Internal);
     }
 
     /** @return array<string, array<string, mixed>> */

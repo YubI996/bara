@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Data\Runtime;
 
+use App\Modules\Data\Jobs\ScanUploadedFile;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Http\UploadedFile;
@@ -12,7 +13,8 @@ use RuntimeException;
 
 /**
  * Penyimpanan lampiran (docs/05 §4 kontrol 4): nama acak, MIME dari deteksi server,
- * SHA-256, status pindai. Berkas hanya boleh diunduh bila scan_status = clean.
+ * SHA-256, status pindai. Berkas hanya boleh diunduh bila scan_status = clean; dengan
+ * scanner 'clamav' berkas tertahan 'pending' sampai ScanUploadedFile selesai.
  */
 final readonly class FileStore
 {
@@ -33,6 +35,8 @@ final readonly class FileStore
             throw new RuntimeException('Gagal menyimpan berkas.');
         }
 
+        $scanned = config()->string('bara.files.scanner') === 'none';
+
         $this->db->table('files')->insert([
             'id' => $id,
             'object_id' => $objectId,
@@ -44,10 +48,14 @@ final readonly class FileStore
             'extension' => $extension,
             'size_bytes' => $file->getSize(),
             'sha256' => hash_file('sha256', $realPath),
-            'scan_status' => config()->string('bara.files.scanner') === 'none' ? 'clean' : 'pending',
+            'scan_status' => $scanned ? 'clean' : 'pending',
             'classification' => $classification,
             'uploaded_by' => $userId,
         ]);
+
+        if (! $scanned) {
+            ScanUploadedFile::dispatch($id)->afterCommit();
+        }
 
         return $id;
     }

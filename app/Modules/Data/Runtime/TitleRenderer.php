@@ -8,8 +8,8 @@ use App\Modules\Metadata\Contracts\EntitySchema;
 use App\Modules\Metadata\Contracts\FieldDefinition;
 
 /**
- * Menyusun judul record dari template ({kode}). Field data pribadi tidak pernah dipakai
- * dalam judul karena judul tampil di daftar, relasi, dan audit.
+ * Menyusun judul record dari template ({kode}). Hanya field publik/internal yang dipakai
+ * dalam judul karena judul tampil di daftar, relasi, dan audit tanpa FieldGate.
  */
 final class TitleRenderer
 {
@@ -22,7 +22,7 @@ final class TitleRenderer
 
         if ($template === '') {
             foreach ($schema->fields as $field) {
-                if (in_array($field->type, ['string', 'text'], true) && ! $field->classification->isPersonal()) {
+                if (in_array($field->type, ['string', 'text'], true) && $field->classification->allowedInTitle()) {
                     $template = '{'.$field->code.'}';
                     break;
                 }
@@ -32,7 +32,7 @@ final class TitleRenderer
         $title = preg_replace_callback('/\{([a-z][a-z0-9_]{1,62})\}/', function (array $m) use ($schema, $values): string {
             $field = $schema->field($m[1]);
 
-            return $field === null || $field->classification->isPersonal()
+            return $field === null || ! $field->classification->allowedInTitle()
                 ? ''
                 : $this->display($field, $values[$field->fieldKey] ?? null);
         }, $template) ?? '';

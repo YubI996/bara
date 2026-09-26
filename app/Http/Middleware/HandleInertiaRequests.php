@@ -53,6 +53,10 @@ class HandleInertiaRequests extends Middleware
                     'viewApplications' => $user !== null && $user->can('viewAny', Application::class),
                 ],
             ],
+            // Menit tanpa aktivitas sebelum sesi berakhir; UI memberi peringatan 2 menit sebelumnya.
+            'session' => [
+                'idle_minutes' => $user !== null && is_int($minutes = $request->attributes->get(EnforceIdleTimeout::ATTRIBUTE)) ? $minutes : null,
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -15,6 +15,7 @@ use App\Modules\Metadata\Models\Relationship;
 use App\Modules\Metadata\Schema\ChangeCategory;
 use App\Modules\Metadata\Schema\DraftReport;
 use App\Modules\Metadata\Schema\FieldChange;
+use App\Modules\Metadata\Schema\MigrationPlanner;
 use App\Modules\Metadata\Schema\SchemaCompiler;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionInterface;
@@ -42,6 +43,7 @@ final readonly class PublishEntityVersion
         private AuditLogger $audit,
         private EventRecorder $events,
         private Dispatcher $dispatcher,
+        private MigrationPlanner $planner,
     ) {}
 
     public function execute(Entity $entity, User $publisher, ?string $note = null): EntityVersion
@@ -60,6 +62,10 @@ final readonly class PublishEntityVersion
             }
 
             $fields = $draft->definitions();
+            $previous = $entity->published_version_id !== null
+                ? EntityVersion::query()->findOrFail($entity->published_version_id)->definitions()
+                : [];
+            $migrations = $this->planner->plan($previous, $fields);
             $compiled = $this->compiler->compile(DraftSupport::context($entity), $draft->version, $fields);
 
             if ($entity->published_version_id !== null) {
@@ -78,13 +84,14 @@ final readonly class PublishEntityVersion
 
             $this->syncRelationships($entity, $compiled);
             $this->registerPermissions($entity);
-            $this->dispatcher->dispatch(new EntityVersionPublished($entity->id, $draft->id, $entity->application_id));
+            $this->dispatcher->dispatch(new EntityVersionPublished($entity->id, $draft->id, $entity->application_id, $migrations));
 
             $this->audit->log('metadata.publish', $entity->id, 'metadata.entity', context: [
                 'version' => $draft->version,
                 'fields' => count($fields),
                 'changes' => count($report->changes),
                 'worst_change' => $this->worst($report)->value,
+                'data_migrations' => count($migrations),
             ]);
             $this->events->record('metadata.published', 'metadata.entity', $entity->id, [
                 'entity_version_id' => $draft->id,

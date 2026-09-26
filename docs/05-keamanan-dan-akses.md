@@ -8,7 +8,9 @@ Sebuah aksi **diizinkan** hanya jika **semua** lapis berikut lolos:
 1. Permission   : user punya role yang memuat permission untuk aksi ini?
 2. Scope        : role itu di-assign pada organisasi yang mencakup owner objek?
 3. Visibility   : kalau lapis 2 gagal, apakah visibility objek membuka akses baca untuk user ini?
-4. Clearance    : field dengan classification di atas clearance role → disembunyikan/di-mask
+4. Clearance    : field dengan classification di atas clearance role → disembunyikan/di-mask.
+                  Clearance hanya dari role aplikasi dan hanya berlaku di unit yang di-grant;
+                  record yang terbaca lewat visibilitas saja dibaca maksimal `internal` (ADR 0015)
    + Workflow   : state saat ini mengizinkan edit (locks_record = false)?
    + Ownership  : aksi tulis pada shared entity hanya untuk owner app (consumer hanya reference/read)
 ```
@@ -118,7 +120,8 @@ Role dan clearance yang lebih tinggi (`personal`) diberikan per aplikasi secara 
 ## 6. Baseline keamanan aplikasi
 
 - Header: CSP ketat (nonce untuk Inertia/Vite), HSTS, `X-Content-Type-Options`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`.
-- Session: cookie `Secure`, `HttpOnly`, `SameSite=Lax`, idle timeout 30 menit untuk admin.
+- Session: cookie `Secure` (default aktif saat `APP_ENV=production`), `HttpOnly`, `SameSite=Lax`. Idle timeout 30 menit (`BARA_PRIVILEGED_IDLE_MINUTES`) untuk pemegang role platform, `app_admin`, atau clearance di atas internal (middleware `EnforceIdleTimeout`); pengguna lain mengikuti `SESSION_LIFETIME`. UI memberi peringatan 2 menit sebelum sesi habis.
+- 2FA: wajib untuk seluruh area admin, dan di area data (`/apps`) untuk pemegang role platform, `app_admin`, atau clearance di atas internal (`EnsureTwoFactorForPrivilegedRoles`).
 - Password: minimal 12 karakter, dicek terhadap daftar kebocoran (`Password::uncompromised()`), hashing Argon2id.
 - Dependency: `composer audit` + `npm audit` di CI, Dependabot/Renovate.
 - Secret: tidak ada di repo. `.env` dari secret store server, dan `APP_KEY`, pepper NIK, serta kunci enkripsi dirotasi dengan prosedur terdokumentasi.

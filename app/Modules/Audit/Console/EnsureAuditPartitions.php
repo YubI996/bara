@@ -51,6 +51,9 @@ final class EnsureAuditPartitions extends Command
                 $from->toDateTimeString(),
                 $to->toDateTimeString(),
             ));
+            // TRUNCATE langsung ke partisi tidak melewati trigger tabel induk (ADR 0011).
+            DB::statement(sprintf('DROP TRIGGER IF EXISTS %1$s_no_truncate ON %1$s', $name));
+            DB::statement(sprintf('CREATE TRIGGER %1$s_no_truncate BEFORE TRUNCATE ON %1$s FOR EACH STATEMENT EXECUTE FUNCTION audit_logs_block_truncate()', $name));
             $this->line("Partisi {$name} siap.");
         }
 
