@@ -13,6 +13,14 @@ interface PermissionRegistry
      */
     public function register(array $permissions): void;
 
+    /**
+     * Memastikan role bawaan aplikasi (app_admin, operator, viewer) ada dan memegang permission
+     * entity yang baru terbit. Clearance role aplikasi = internal; data pribadi butuh role khusus.
+     *
+     * @param  list<string>  $actions  aksi entity, mis. ['view','create','update','delete','export']
+     */
+    public function grantEntityToApplicationRoles(string $applicationId, string $applicationCode, string $entityCode, array $actions): void;
+
     /** Menyinkronkan permission platform dan isi role bawaan (idempotent). */
     public function syncSystemRoles(): void;
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Access\Providers;
 
+use App\Modules\Access\Console\AssignRole;
 use App\Modules\Access\Console\SyncAccess;
 use App\Modules\Access\Contracts\AccessChecker;
 use App\Modules\Access\Contracts\PermissionRegistry;
@@ -27,7 +28,7 @@ final class AccessServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
-            $this->commands([SyncAccess::class]);
+            $this->commands([SyncAccess::class, AssignRole::class]);
         }
     }
 }

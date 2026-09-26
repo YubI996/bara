@@ -49,5 +49,7 @@ final class E2eSeeder extends Seeder
         $dinkes = $createOrganization->execute(new CreateOrganizationData($root->id, 'dinkes', 'Dinas Kesehatan', 'Dinkes', OrganizationKind::Dinas));
         $createOrganization->execute(new CreateOrganizationData($dinkes->id, 'bid_p2p', 'Bidang Pencegahan dan Pengendalian Penyakit', 'P2P', OrganizationKind::Bidang));
         $createOrganization->execute(new CreateOrganizationData($root->id, 'setda', 'Sekretariat Daerah', 'Setda', OrganizationKind::Sekretariat));
+
+        (new E2eRuntimeFixture)(User::query()->where('email', self::ADMIN_EMAIL)->firstOrFail(), $root->id);
     }
 }

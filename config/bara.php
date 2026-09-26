@@ -20,4 +20,16 @@ return [
         'email' => env('BARA_ADMIN_EMAIL', 'admin@example.test'),
         'password' => env('BARA_ADMIN_PASSWORD', ''),
     ],
+
+    'records' => [
+        // CREATE INDEX CONCURRENTLY tidak bisa dalam transaksi; test memakai false.
+        'concurrent_index' => filter_var(env('BARA_CONCURRENT_INDEX', true), FILTER_VALIDATE_BOOLEAN),
+        'page_size' => 25,
+    ],
+
+    'files' => [
+        'disk' => env('BARA_FILES_DISK', 'local'),
+        // none = belum ada pemindai (dev); clamav = pindai sebelum boleh diunduh (produksi).
+        'scanner' => env('BARA_FILE_SCANNER', 'none'),
+    ],
 ];

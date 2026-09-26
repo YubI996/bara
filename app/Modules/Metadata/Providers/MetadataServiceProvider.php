@@ -6,9 +6,11 @@ namespace App\Modules\Metadata\Providers;
 
 use App\Modules\Metadata\Contracts\EntityCatalog;
 use App\Modules\Metadata\Contracts\FieldTypeRegistry;
+use App\Modules\Metadata\Contracts\SchemaRepository;
 use App\Modules\Metadata\FieldTypes\Registry;
 use App\Modules\Metadata\Infrastructure\DatabaseEntityCatalog;
 use App\Modules\Metadata\Infrastructure\EloquentRelationshipTargets;
+use App\Modules\Metadata\Infrastructure\EloquentSchemaRepository;
 use App\Modules\Metadata\Models\Application;
 use App\Modules\Metadata\Models\Entity;
 use App\Modules\Metadata\Policies\ApplicationPolicy;
@@ -27,6 +29,7 @@ final class MetadataServiceProvider extends ServiceProvider
         ));
         $this->app->singleton(FieldTypeRegistry::class, Registry::class);
         $this->app->scoped(RelationshipTargets::class, EloquentRelationshipTargets::class);
+        $this->app->scoped(SchemaRepository::class, EloquentSchemaRepository::class);
     }
 
     public function boot(): void

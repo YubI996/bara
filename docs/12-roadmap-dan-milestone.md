@@ -67,15 +67,26 @@ Catatan implementasi M0:
 
 Tambahan di luar daftar awal: gate persetujuan Pejabat PDP untuk field data pribadi, pemeriksa ReDoS pada pola regex, peringatan label bernuansa data pribadi, tombol naik/turun urutan field (alternatif drag), dan `bara:sync-access` untuk menyamakan role bawaan.
 
-### M2 — Runtime CRUD
+### M2 — Runtime CRUD ✅ (selesai 2026-09-26)
 
-- [ ] Entity yang dipublikasikan langsung punya halaman index/create/show/edit **tanpa deploy**.
-- [ ] Validasi server sesuai tipe. Payload berisi key tak dikenal → 422.
-- [ ] Operator OPD A tidak bisa melihat/mengubah record OPD B (feature test IDOR per endpoint).
-- [ ] Konflik edit (`lock_version`) menampilkan pesan dan opsi muat ulang.
-- [ ] List 100.000 record fixture: p95 < 300 ms dengan filter field ter-index.
-- [ ] Setiap create/update/delete tercatat di audit dengan diff.
-- [ ] Form runtime berisi semua tipe field lolos axe dan uji keyboard.
+- [x] Entity yang dipublikasikan langsung punya halaman index/create/show/edit **tanpa deploy** (`/apps/{app}/{entity}`).
+- [x] Validasi server sesuai tipe. Payload berisi key tak dikenal → 422.
+- [x] Operator OPD A tidak bisa melihat/mengubah record OPD B (feature test IDOR per endpoint, termasuk unduh berkas).
+- [x] Konflik edit (`lock_version`) menampilkan pesan dan opsi muat ulang.
+- [x] List 100.000 record fixture: p95 **7,5 ms** (filter enum terindeks) dan **94 ms** (cari judul), jauh di bawah 300 ms. Jalankan: `BARA_PERF=1 php artisan test --filter=ListPerformance`.
+- [x] Setiap create/update/delete tercatat di audit dengan diff. Nilai field terbatas/pribadi dan rich text disamarkan di audit.
+- [x] Form runtime berisi semua tipe field lolos axe (desktop & mobile) dan diisi dengan keyboard.
+
+Catatan implementasi M2:
+
+- Data record berkunci `field_key` (ADR 0014).
+- Role aplikasi bawaan (`app_admin`, `operator`, `viewer`) dibuat otomatis saat entity pertama terbit. Penugasan sementara lewat `php artisan bara:assign-role` (UI di M5).
+- FieldGate aktif: field di atas clearance disembunyikan; data pribadi umum bertipe teks ditampilkan tersamar dan tidak bisa diubah; nilai lama dipertahankan saat user berclearance rendah mengubah record.
+- Relasi sudah tersimpan di `record_links` dengan pilihan (maks. 200 opsi, ber-scope). Pencarian async, kolom relasi di daftar, dan eager load menyusul di M3. Aturan hapus `restrict`/`nullify` sudah aktif.
+- Field `region` ditampilkan sebagai "tersedia di M4" dan dilewati validasi sampai data wilayah dimuat.
+- `rich_text` memakai textarea + sanitasi HTML allowlist di server (symfony/html-sanitizer). Editor WYSIWYG aksesibel menyusul.
+- Lampiran: nama acak, MIME dideteksi dari isi, SHA-256, unduh hanya bila `scan_status = clean`. Pemindai (ClamAV) diaktifkan lewat `BARA_FILE_SCANNER=clamav`; tanpa pemindai berkas langsung `clean` (khusus dev).
+- API record internal (JSON) ditunda ke M11 bersama OAuth2/Sanctum; endpoint web sudah menjawab 422 JSON untuk klien `Accept: application/json`.
 
 ### M3 — Relationship
 

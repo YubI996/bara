@@ -14,7 +14,9 @@ supaya bisa bertukar data antar-Pemda.
 **M0 (Fondasi) dan M1 (Metadata engine) selesai.** Tersedia: login + 2FA, struktur organisasi
 berhierarki (ltree), otorisasi berbasis scope unit, audit log append-only, outbox event, serta
 pembangun aplikasi → entity → field (15 tipe) dengan versi, diff perubahan, gate persetujuan
-Pejabat PDP, dan publikasi skema. Berikutnya M2 (Runtime CRUD), lihat [roadmap](docs/12-roadmap-dan-milestone.md).
+Pejabat PDP, publikasi skema, serta **halaman input data otomatis** untuk setiap entity terbit
+(daftar, tambah, detail, ubah, hapus, lampiran) yang dibatasi scope unit dan clearance data.
+Berikutnya M3 (Relationship), lihat [roadmap](docs/12-roadmap-dan-milestone.md).
 
 ## Menjalankan secara lokal (Windows + Laragon)
 
@@ -31,6 +33,8 @@ php artisan key:generate
 psql -U bara -c "CREATE DATABASE bara" -c "CREATE DATABASE bara_test"
 php artisan migrate --seed      # password admin dicetak SEKALI bila BARA_ADMIN_PASSWORD kosong
 php artisan bara:sync-access    # jalankan juga setiap selesai git pull / deploy
+# beri diri Anda role operator aplikasi (setelah entity pertama terbit):
+# php artisan bara:assign-role admin@example.test operator pemda --app=monev
 npm run build
 composer dev                    # server + queue + vite
 ```
@@ -48,22 +52,23 @@ Tes: `php artisan test` (butuh DB `bara_test`), `npm run test:e2e` (butuh DB `ba
 
 ## Keputusan utama (ringkas)
 
-| Aspek              | Keputusan                                                             | ADR                                                    |
-| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------ |
-| Bentuk sistem      | Modular monolith, satu deployment                                     | [0001](docs/adr/0001-modular-monolith.md)              |
-| Backend            | Laravel 13, PHP 8.5, strict types                                     | [0001](docs/adr/0001-modular-monolith.md)              |
-| Frontend           | Inertia v3 + React 19 + TypeScript strict + Tailwind v4               | [0002](docs/adr/0002-frontend-inertia-react.md)        |
-| Database           | PostgreSQL 18 (JSONB, ltree, PostGIS, RLS)                            | [0003](docs/adr/0003-postgresql.md)                    |
-| Penyimpanan record | Hybrid: Core = tabel fisik, aplikasi = JSONB, relasi = `record_links` | [0004](docs/adr/0004-hybrid-storage.md)                |
-| Identitas objek    | UUIDv7 + registry `objects` (supertype)                               | [0005](docs/adr/0005-object-registry-uuidv7.md)        |
-| Evolusi skema      | Metadata berversi (draft → published)                                 | [0006](docs/adr/0006-metadata-versioning.md)           |
-| Otorisasi          | RBAC + scope organisasi (ltree) + field classification + RLS          | [0007](docs/adr/0007-authorization-model.md)           |
-| Processing         | DSL JSON deklaratif → SQL (query builder), formula via parser sendiri | [0008](docs/adr/0008-processing-dsl.md)                |
-| Indikator          | Definisi berversi + snapshot nilai + lineage                          | [0009](docs/adr/0009-indicator-snapshot.md)            |
-| Event              | Transactional outbox + listener idempotent                            | [0010](docs/adr/0010-transactional-outbox.md)          |
-| Audit              | Append-only, dipartisi per bulan                                      | [0011](docs/adr/0011-audit-append-only.md)             |
-| Multi-Pemda        | Single-tenant; federasi lewat SPLP, bukan database bersama            | [0012](docs/adr/0012-single-tenant-splp-federation.md) |
-| Auth               | Lokal + siap OIDC SSO; API mesin via OAuth2 client credentials        | [0013](docs/adr/0013-authentication.md)                |
+| Aspek              | Keputusan                                                             | ADR                                                     |
+| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------- |
+| Bentuk sistem      | Modular monolith, satu deployment                                     | [0001](docs/adr/0001-modular-monolith.md)               |
+| Backend            | Laravel 13, PHP 8.5, strict types                                     | [0001](docs/adr/0001-modular-monolith.md)               |
+| Frontend           | Inertia v3 + React 19 + TypeScript strict + Tailwind v4               | [0002](docs/adr/0002-frontend-inertia-react.md)         |
+| Database           | PostgreSQL 18 (JSONB, ltree, PostGIS, RLS)                            | [0003](docs/adr/0003-postgresql.md)                     |
+| Penyimpanan record | Hybrid: Core = tabel fisik, aplikasi = JSONB, relasi = `record_links` | [0004](docs/adr/0004-hybrid-storage.md)                 |
+| Identitas objek    | UUIDv7 + registry `objects` (supertype)                               | [0005](docs/adr/0005-object-registry-uuidv7.md)         |
+| Evolusi skema      | Metadata berversi (draft → published)                                 | [0006](docs/adr/0006-metadata-versioning.md)            |
+| Otorisasi          | RBAC + scope organisasi (ltree) + field classification + RLS          | [0007](docs/adr/0007-authorization-model.md)            |
+| Processing         | DSL JSON deklaratif → SQL (query builder), formula via parser sendiri | [0008](docs/adr/0008-processing-dsl.md)                 |
+| Indikator          | Definisi berversi + snapshot nilai + lineage                          | [0009](docs/adr/0009-indicator-snapshot.md)             |
+| Event              | Transactional outbox + listener idempotent                            | [0010](docs/adr/0010-transactional-outbox.md)           |
+| Audit              | Append-only, dipartisi per bulan                                      | [0011](docs/adr/0011-audit-append-only.md)              |
+| Multi-Pemda        | Single-tenant; federasi lewat SPLP, bukan database bersama            | [0012](docs/adr/0012-single-tenant-splp-federation.md)  |
+| Auth               | Lokal + siap OIDC SSO; API mesin via OAuth2 client credentials        | [0013](docs/adr/0013-authentication.md)                 |
+| Kunci data record  | JSONB berkunci `field_key` stabil, bukan kode field                   | [0014](docs/adr/0014-record-data-keyed-by-field-key.md) |
 
 ## Peta dokumen
 

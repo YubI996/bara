@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Access\Contracts\PermissionRegistry;
 use App\Modules\Audit\Contracts\AuditLogger;
 use App\Modules\Eventing\Contracts\EventRecorder;
+use App\Modules\Metadata\Contracts\EntityVersionPublished;
 use App\Modules\Metadata\Models\Entity;
 use App\Modules\Metadata\Models\EntityVersion;
 use App\Modules\Metadata\Models\Relationship;
@@ -15,6 +16,7 @@ use App\Modules\Metadata\Schema\ChangeCategory;
 use App\Modules\Metadata\Schema\DraftReport;
 use App\Modules\Metadata\Schema\FieldChange;
 use App\Modules\Metadata\Schema\SchemaCompiler;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionInterface;
 
 /**
@@ -39,6 +41,7 @@ final readonly class PublishEntityVersion
         private PermissionRegistry $permissions,
         private AuditLogger $audit,
         private EventRecorder $events,
+        private Dispatcher $dispatcher,
     ) {}
 
     public function execute(Entity $entity, User $publisher, ?string $note = null): EntityVersion
@@ -75,6 +78,7 @@ final readonly class PublishEntityVersion
 
             $this->syncRelationships($entity, $compiled);
             $this->registerPermissions($entity);
+            $this->dispatcher->dispatch(new EntityVersionPublished($entity->id, $draft->id, $entity->application_id));
 
             $this->audit->log('metadata.publish', $entity->id, 'metadata.entity', context: [
                 'version' => $draft->version,
@@ -130,6 +134,12 @@ final readonly class PublishEntityVersion
         }
 
         $this->permissions->register($permissions);
+        $this->permissions->grantEntityToApplicationRoles(
+            $entity->application_id,
+            $entity->application->code,
+            $entity->code,
+            array_keys(self::ENTITY_ACTIONS),
+        );
     }
 
     private function summary(DraftReport $report, ?string $note): string

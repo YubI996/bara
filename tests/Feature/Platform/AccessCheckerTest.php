@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
 use App\Modules\Access\Contracts\AccessChecker;
 use App\Modules\Access\Contracts\PlatformPermission;
 use App\Modules\Organization\Enums\OrganizationKind;
@@ -53,4 +54,17 @@ test('role auditor tidak punya hak kelola', function (): void {
 
     expect(app(AccessChecker::class)->hasAnywhere($auditor, PlatformPermission::OrganizationView))->toBeTrue()
         ->and(app(AccessChecker::class)->hasAnywhere($auditor, PlatformPermission::OrganizationManage))->toBeFalse();
+});
+
+test('perintah bara:assign-role memberi role aplikasi dan tercatat di audit', function (): void {
+    $app = createApplication('monev');
+    $entity = createEntity($app);
+    addField($entity, 'nama');
+    publishEntity($entity);
+    $user = User::factory()->create();
+
+    $this->artisan('bara:assign-role', ['email' => $user->email, 'role' => 'operator', 'org' => 'dinkes', '--app' => 'monev'])->assertSuccessful();
+
+    expect(app(AccessChecker::class)->allows($user, 'monev.kegiatan.create', $this->bidang->path))->toBeTrue()
+        ->and(DB::table('audit_logs')->where(['action' => 'role.assigned', 'object_id' => $user->id])->exists())->toBeTrue();
 });

@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { Boxes, Building2, LayoutGrid } from 'lucide-react';
+import { Boxes, Building2, Database, LayoutGrid } from 'lucide-react';
+import RecordController from '@/actions/App/Modules/Data/Http/Controllers/RecordController';
 import ApplicationController from '@/actions/App/Modules/Metadata/Http/Controllers/ApplicationController';
 import OrganizationController from '@/actions/App/Modules/Organization/Http/Controllers/OrganizationController';
 import { dashboard } from '@/routes';
@@ -11,6 +12,7 @@ export function useMainNav(): NavItem[] {
 
     const items: NavItem[] = [
         { title: 'Dasbor', href: dashboard(), icon: LayoutGrid },
+        { title: 'Data', href: RecordController.home(), icon: Database },
     ];
 
     if (auth.can.viewOrganizations) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Access\Contracts;
 
 use App\Models\User;
+use App\Shared\Data\DataClassification;
 
 interface AccessChecker
 {
@@ -20,4 +21,10 @@ interface AccessChecker
      * @return list<ScopeGrant>
      */
     public function grants(User $user, PlatformPermission|string $permission): array;
+
+    /**
+     * Klasifikasi data tertinggi yang boleh dibaca user dalam aplikasi ini
+     * (maksimum clearance dari role platform dan role aplikasi yang aktif).
+     */
+    public function clearance(User $user, ?string $applicationId): DataClassification;
 }

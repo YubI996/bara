@@ -109,3 +109,23 @@ function publishEntity(Entity $entity, ?User $publisher = null): EntityVersion
     return app(PublishEntityVersion::class)
         ->execute($entity->refresh(), $publisher ?? userWithRole('platform_admin'));
 }
+
+/** User dengan role aplikasi (app_admin/operator/viewer) pada scope unit tertentu. */
+function userWithAppRole(Application $application, string $roleCode, ?Organization $scope = null, bool $includeDescendants = true): User
+{
+    $user = User::factory()->create(['primary_org_id' => ($scope ?? rootOrganization())->id]);
+    $roleId = DB::table('roles')->where('application_id', $application->id)->where('code', $roleCode)->value('id');
+
+    if (! is_string($roleId)) {
+        throw new RuntimeException("Role {$roleCode} belum ada; publikasikan entity dulu.");
+    }
+
+    DB::table('role_assignments')->insert([
+        'user_id' => $user->id,
+        'role_id' => $roleId,
+        'scope_org_id' => ($scope ?? rootOrganization())->id,
+        'include_descendants' => $includeDescendants,
+    ]);
+
+    return $user;
+}

@@ -32,6 +32,38 @@ final readonly class DatabasePermissionRegistry implements PermissionRegistry
         }
     }
 
+    /** @var array<string, array{string, list<string>}> role aplikasi => [nama, aksi] */
+    private const array APPLICATION_ROLES = [
+        'app_admin' => ['Admin aplikasi', ['view', 'create', 'update', 'delete', 'export']],
+        'operator' => ['Operator', ['view', 'create', 'update', 'delete']],
+        'viewer' => ['Pembaca', ['view']],
+    ];
+
+    public function grantEntityToApplicationRoles(string $applicationId, string $applicationCode, string $entityCode, array $actions): void
+    {
+        foreach (self::APPLICATION_ROLES as $code => [$name, $roleActions]) {
+            $roleId = $this->db->table('roles')->where('application_id', $applicationId)->where('code', $code)->value('id');
+
+            if (! is_string($roleId)) {
+                $roleId = Str::uuid7()->toString();
+                $this->db->table('roles')->insert([
+                    'id' => $roleId,
+                    'code' => $code,
+                    'application_id' => $applicationId,
+                    'name' => $name,
+                    'clearance' => 'internal',
+                    'is_system' => true,
+                ]);
+            }
+
+            $rows = [];
+            foreach (array_intersect($roleActions, $actions) as $action) {
+                $rows[] = ['role_id' => $roleId, 'permission_code' => "{$applicationCode}.{$entityCode}.{$action}"];
+            }
+            $this->db->table('role_permissions')->insertOrIgnore($rows);
+        }
+    }
+
     public function syncSystemRoles(): void
     {
         $this->db->transaction(function (): void {
