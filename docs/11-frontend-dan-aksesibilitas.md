@@ -74,17 +74,17 @@ Karena UI dihasilkan dari metadata, aksesibilitas juga dijaga di level metadata:
 
 ### 3.4 Pola yang sudah diterapkan (M0–M2 + remediasi audit)
 
-| Kebutuhan                    | Implementasi                                                                                                                         |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Fokus terlihat               | Outline global 3px `--focus` + offset 2px (`resources/css/app.css`), menang atas `outline-none` komponen shadcn                     |
-| Batas kolom form             | `--input` ≥ 3:1 terhadap latar; `--border` tetap dekoratif                                                                           |
-| Form                         | `Field` + `ErrorSummary` di semua form (termasuk login/pengaturan); ringkasan menaut ke field induk untuk error bersarang            |
-| Aksi berdampak               | `ConfirmAction` (dialog + status proses + error `role=alert`) untuk hapus, buang draft, publikasi, persetujuan PDP, nonaktif 2FA     |
-| Aksi router tanpa form       | `useRouterAction`: tombol nonaktif saat proses, error server tampil sebagai toast                                                    |
-| Navigasi                     | Skip link, `aria-current` pada menu & breadcrumb, `RouteAnnouncer` (umumkan judul + fokus ke `h1`, "Memuat…" bila > 1 detik)         |
-| Waktu                        | `SessionTimeoutWarning`: dialog `alertdialog` 2 menit sebelum idle timeout server, tombol "Perpanjang sesi"                          |
-| Error HTTP                   | Halaman `errors/show` berbahasa Indonesia (403/404/429/500/503); 419 kembali ke form dengan pesan, isian tetap ada                   |
-| Zona waktu & angka           | Tanggal-waktu memakai zona Pemda (shared prop `pemda.timezone`); isian angka memakai koma desimal tanpa pemisah ribuan               |
+| Kebutuhan              | Implementasi                                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Fokus terlihat         | Outline global 3px `--focus` + offset 2px (`resources/css/app.css`), menang atas `outline-none` komponen shadcn                  |
+| Batas kolom form       | `--input` ≥ 3:1 terhadap latar; `--border` tetap dekoratif                                                                       |
+| Form                   | `Field` + `ErrorSummary` di semua form (termasuk login/pengaturan); ringkasan menaut ke field induk untuk error bersarang        |
+| Aksi berdampak         | `ConfirmAction` (dialog + status proses + error `role=alert`) untuk hapus, buang draft, publikasi, persetujuan PDP, nonaktif 2FA |
+| Aksi router tanpa form | `useRouterAction`: tombol nonaktif saat proses, error server tampil sebagai toast                                                |
+| Navigasi               | Skip link, `aria-current` pada menu & breadcrumb, `RouteAnnouncer` (umumkan judul + fokus ke `h1`, "Memuat…" bila > 1 detik)     |
+| Waktu                  | `SessionTimeoutWarning`: dialog `alertdialog` 2 menit sebelum idle timeout server, tombol "Perpanjang sesi"                      |
+| Error HTTP             | Halaman `errors/show` berbahasa Indonesia (403/404/429/500/503); 419 kembali ke form dengan pesan, isian tetap ada               |
+| Zona waktu & angka     | Tanggal-waktu memakai zona Pemda (shared prop `pemda.timezone`); isian angka memakai koma desimal tanpa pemisah ribuan           |
 
 ## 4. Desain visual
 

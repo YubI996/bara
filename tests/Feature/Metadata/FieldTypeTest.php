@@ -81,7 +81,11 @@ test('kode field yang dicadangkan sistem ditolak', function (string $code): void
 
 test('pola regex berisiko ReDoS ditolak', function (string $pattern): void {
     expect(SafeRegex::error($pattern))->not->toBeNull();
-})->with(['(a+)+', '(a*)*b', '([a-z]+)*$', '(.*a){20}', '(a)\1', '[unclosed']);
+})->with(['(a+)+', '(a*)*b', '([a-z]+)*$', '(.*a){20}', '(a)\1', '[unclosed', '((a+))+', '(a|aa)+', '(x+x+)+y', '(\w+\s?)*$']);
+
+test('pola regex umum dengan pengulangan terbatas tetap diterima', function (string $pattern): void {
+    expect(SafeRegex::error($pattern))->toBeNull();
+})->with(['[0-9]{16}', '([0-9]{2}\.){3}[0-9]{4}', '[A-Z]{2}-[0-9]+', '(ya|tidak)', '[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}']);
 
 test('pola regex aman diterima dan dipakai validasi nilai', function (): void {
     expect(SafeRegex::error('[0-9]{16}'))->toBeNull();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Metadata\Actions;
 
 use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Eventing\Contracts\EventRecorder;
 use App\Modules\Metadata\Data\EntityData;
 use App\Modules\Metadata\Models\Entity;
 use Illuminate\Database\ConnectionInterface;
@@ -18,6 +19,7 @@ final readonly class UpdateEntity
     public function __construct(
         private ConnectionInterface $db,
         private AuditLogger $audit,
+        private EventRecorder $events,
     ) {}
 
     public function execute(Entity $entity, EntityData $data): Entity
@@ -52,6 +54,8 @@ final readonly class UpdateEntity
             if ($changes !== []) {
                 $entity->save();
                 $this->audit->log('entity.update', $entity->id, 'metadata.entity', $changes);
+                // Visibilitas bawaan & status shared memengaruhi cache akses konsumen (docs/08).
+                $this->events->record('metadata.entity_updated', 'metadata.entity', $entity->id, ['changed' => array_keys($changes)]);
             }
 
             return $entity;

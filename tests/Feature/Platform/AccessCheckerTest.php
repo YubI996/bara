@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Models\User;
 use App\Modules\Access\Contracts\AccessChecker;
 use App\Modules\Access\Contracts\PlatformPermission;
+use App\Modules\Metadata\Actions\MoveDraftField;
+use App\Modules\Metadata\Models\Field;
 use App\Modules\Organization\Enums\OrganizationKind;
 use Illuminate\Support\Facades\DB;
 
@@ -67,4 +69,36 @@ test('perintah bara:assign-role memberi role aplikasi dan tercatat di audit', fu
 
     expect(app(AccessChecker::class)->allows($user, 'monev.kegiatan.create', $this->bidang->path))->toBeTrue()
         ->and(DB::table('audit_logs')->where(['action' => 'role.assigned', 'object_id' => $user->id])->exists())->toBeTrue();
+});
+
+test('bara:assign-role menulis audit + outbox dalam satu transaksi dan menolak kondisi berisiko', function (): void {
+    $user = User::factory()->create();
+    $inactive = User::factory()->create(['is_active' => false]);
+
+    $this->artisan('bara:assign-role', ['email' => $inactive->email, 'role' => 'auditor', 'org' => 'dinkes'])->assertFailed();
+    $this->artisan('bara:assign-role', ['email' => $user->email, 'role' => 'platform_admin', 'org' => 'dinkes'])->assertFailed();
+    expect(DB::table('role_assignments')->where('user_id', $user->id)->exists())->toBeFalse();
+
+    $this->artisan('bara:assign-role', ['email' => $user->email, 'role' => 'platform_admin', 'org' => 'dinkes', '--force' => true, '--exact' => true])->assertSuccessful();
+
+    $audit = DB::table('audit_logs')->where(['action' => 'role.assigned', 'object_id' => $user->id])->first();
+    expect($audit)->not->toBeNull()
+        ->and($audit->trace_id)->not->toBeNull()
+        ->and(json_decode((string) $audit->context, true))->toMatchArray(['role' => 'platform_admin', 'via' => 'cli', 'include_descendants' => false])
+        ->and(DB::table('outbox_events')->where(['event_type' => 'role.assigned', 'aggregate_id' => $user->id])->exists())->toBeTrue();
+});
+
+test('setiap aksi draft metadata mencatat event outbox', function (): void {
+    $app = createApplication('monev');
+    $entity = createEntity($app);
+    addField($entity, 'nama');
+    addField($entity, 'kode');
+    app(MoveDraftField::class)->execute(
+        $entity->refresh(),
+        Field::query()->where('entity_version_id', $entity->draft_version_id)->where('code', 'kode')->firstOrFail(),
+        'up',
+    );
+
+    expect(DB::table('outbox_events')->where('event_type', 'metadata.draft_changed')->count())->toBe(3)
+        ->and(DB::table('audit_logs')->where('action', 'metadata.field_move')->exists())->toBeTrue();
 });

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Metadata\Actions;
 
+use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Eventing\Contracts\EventRecorder;
 use App\Modules\Metadata\Models\Entity;
 use App\Modules\Metadata\Models\Field;
 use Illuminate\Database\ConnectionInterface;
@@ -11,7 +13,11 @@ use Illuminate\Database\ConnectionInterface;
 /** Menaikkan/menurunkan urutan field (alternatif keyboard untuk drag, WCAG 2.5.7). */
 final readonly class MoveDraftField
 {
-    public function __construct(private ConnectionInterface $db) {}
+    public function __construct(
+        private ConnectionInterface $db,
+        private AuditLogger $audit,
+        private EventRecorder $events,
+    ) {}
 
     /** @param  'up'|'down'  $direction */
     public function execute(Entity $entity, Field $field, string $direction): void
@@ -40,6 +46,10 @@ final readonly class MoveDraftField
             $neighbour->forceFill(['position' => $a])->save();
 
             DraftSupport::touch($draft);
+            $this->audit->log('metadata.field_move', $entity->id, 'metadata.entity', [
+                $field->code => [$a, $b],
+            ], ['version' => $draft->version]);
+            $this->events->record('metadata.draft_changed', 'metadata.entity', $entity->id, ['version' => $draft->version, 'field_key' => $field->field_key, 'change' => 'moved']);
         });
     }
 }

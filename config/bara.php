@@ -30,6 +30,8 @@ return [
     'security' => [
         // docs/05 §6: idle timeout pengguna ber-role berisiko tinggi (admin/platform/clearance tinggi).
         'privileged_idle_minutes' => (int) env('BARA_PRIVILEGED_IDLE_MINUTES', 30),
+        // SEC-013: IP reverse proxy yang menerminasi TLS ("10.0.0.10,10.0.0.11" atau "*").
+        'trusted_proxies' => env('BARA_TRUSTED_PROXIES', ''),
     ],
 
     'files' => [

@@ -6,6 +6,7 @@ namespace App\Modules\Metadata\Actions;
 
 use App\Models\User;
 use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Eventing\Contracts\EventRecorder;
 use App\Modules\Metadata\Models\Entity;
 use Illuminate\Database\ConnectionInterface;
 
@@ -19,6 +20,7 @@ final readonly class ReviewDraftPrivacy
         private ConnectionInterface $db,
         private InspectDraft $inspect,
         private AuditLogger $audit,
+        private EventRecorder $events,
     ) {}
 
     public function execute(Entity $entity, User $reviewer): void
@@ -37,6 +39,7 @@ final readonly class ReviewDraftPrivacy
             ])->save();
 
             $this->audit->log('metadata.privacy_review', $entity->id, 'metadata.entity', context: ['version' => $draft->version]);
+            $this->events->record('metadata.privacy_reviewed', 'metadata.entity', $entity->id, ['version' => $draft->version, 'reviewer_id' => $reviewer->id]);
         });
     }
 }

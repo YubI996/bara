@@ -9,7 +9,11 @@ use App\Modules\Data\Scanning\FileScanner;
 use App\Modules\Data\Scanning\ScanResult;
 use App\Modules\Metadata\Actions\CreateDraft;
 use App\Modules\Metadata\Actions\ReviewDraftPrivacy;
+use App\Modules\Metadata\Actions\SaveDraftField;
+use App\Modules\Metadata\Data\FieldInput;
+use App\Modules\Metadata\Models\Field;
 use App\Shared\Data\DataClassification;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -255,4 +259,37 @@ describe('REQ-001 pemindaian lampiran', function (): void {
             ->and(ClamdScanner::parse('INSTREAM size limit exceeded. ERROR')->status)->toBe('error')
             ->and((new ClamdScanner('tcp://127.0.0.1:1', 0.5))->scan(fopen('php://memory', 'r'))->status)->toBe('error');
     });
+});
+
+test('SEC-007 tulis data runtime dibatasi throttle per user', function (): void {
+    foreach (['runtime.store', 'runtime.update', 'runtime.destroy'] as $name) {
+        expect(app('router')->getRoutes()->getByName($name)?->gatherMiddleware())->toContain('throttle:runtime-write');
+    }
+});
+
+test('SEC-007 pesan unik untuk field di atas internal tidak membocorkan keberadaan nilai', function (): void {
+    app(CreateDraft::class)->execute($this->entity->refresh());
+    $field = Field::query()->where('entity_version_id', $this->entity->refresh()->draft_version_id)->where('code', 'kode_rahasia')->firstOrFail();
+    app(SaveDraftField::class)->execute($this->entity, new FieldInput(
+        code: 'kode_rahasia', label: 'Kode rahasia', helpText: null, type: 'string', required: false, unique: true,
+        indexed: true, searchable: false, classification: DataClassification::Restricted, config: ['max_length' => 30],
+    ), $field);
+    publishEntity($this->entity);
+
+    DB::table('roles')->insert(['code' => 'arsiparis', 'application_id' => $this->monev->id, 'name' => 'Arsiparis', 'clearance' => 'restricted', 'is_system' => false]);
+    $petugas = userWithAppRole($this->monev, 'operator', $this->dinkes, twoFactor: true);
+    DB::table('role_assignments')->insert(['user_id' => $petugas->id, 'role_id' => DB::table('roles')->where('code', 'arsiparis')->value('id'), 'scope_org_id' => $this->dinkes->id]);
+
+    storeKegiatan($this, $petugas, ['nama' => 'Satu', 'kode_rahasia' => 'X-1'], $this->dinkes->id)->assertSessionHasNoErrors();
+    storeKegiatan($this, $petugas, ['nama' => 'Dua', 'kode_rahasia' => 'X-1'], $this->dinkes->id)
+        ->assertSessionHasErrors(['data.kode_rahasia' => 'Kode rahasia tidak dapat dipakai. Periksa kembali nilainya atau hubungi admin aplikasi.']);
+});
+
+test('SEC-013 HSTS terkirim di balik proxy tepercaya', function (): void {
+    TrustProxies::at('*');
+
+    $this->get(route('login'), ['X-Forwarded-Proto' => 'https', 'X-Forwarded-For' => '203.0.113.5'])
+        ->assertHeader('Strict-Transport-Security');
+
+    TrustProxies::flushState();
 });

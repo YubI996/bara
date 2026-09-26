@@ -79,6 +79,23 @@ Ukuran awal (asumsi doc 01 §6): app 2 × (4 vCPU, 8 GB), worker 1 × (4 vCPU, 8
 - Migration harus **backward compatible** satu rilis (expand → migrate → contract), supaya rolling deploy tanpa downtime bisa dilakukan.
 - `CREATE INDEX CONCURRENTLY` untuk tabel besar dijalankan di luar transaksi migration.
 
+### Checklist deploy produksi
+
+1. `.env` dari `.env.production.example`: `APP_ENV=production`, `APP_DEBUG=false`, `LOG_LEVEL=warning`,
+   `SESSION_SECURE_COOKIE=true`, `BARA_FILE_SCANNER=clamav`, `BARA_TRUSTED_PROXIES` berisi IP reverse proxy.
+   Aplikasi menolak melayani request bila tiga yang pertama salah (`guardProductionConfiguration`).
+2. Role DB terpisah: migration memakai `bara_owner` (pemilik tabel); aplikasi memakai `bara_app`:
+    ```sql
+    GRANT SELECT, INSERT ON audit_logs TO bara_app;
+    REVOKE UPDATE, DELETE, TRUNCATE ON audit_logs FROM bara_app;
+    ```
+    Dengan begitu kredensial aplikasi yang bocor tidak bisa DETACH/DROP partisi atau DISABLE TRIGGER
+    (trigger `audit_logs_append_only` dan `audit_logs_no_truncate` tetap menjadi lapis kedua).
+3. clamd berjalan dan terjangkau lewat `BARA_CLAMAV_SOCKET`; uji dengan berkas EICAR → status `infected`.
+4. Worker antrean aktif (`php artisan queue:work`) untuk `ScanUploadedFile`, `EnsureRecordIndexes`, `MigrateRecordData`.
+5. `php artisan migrate --force`, `php artisan bara:sync-access`, `php artisan bara:audit-partitions`.
+6. Verifikasi header di balik proxy: `Strict-Transport-Security` ada, cookie sesi `Secure; HttpOnly; SameSite=Lax`.
+
 ## 7. Runbook insiden (ringkas)
 
 1. **Deteksi** → alert/laporan → buka tiket insiden, tetapkan komandan insiden.

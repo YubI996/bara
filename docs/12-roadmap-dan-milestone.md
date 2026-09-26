@@ -71,7 +71,7 @@ Tambahan di luar daftar awal: gate persetujuan Pejabat PDP untuk field data prib
 
 - [x] Entity yang dipublikasikan langsung punya halaman index/create/show/edit **tanpa deploy** (`/apps/{app}/{entity}`).
 - [x] Validasi server sesuai tipe. Payload berisi key tak dikenal → 422.
-- [x] Operator OPD A tidak bisa melihat/mengubah record OPD B (feature test IDOR per endpoint, termasuk unduh berkas).
+- [x] Operator OPD A tidak bisa melihat/mengubah record OPD B yang ber-visibilitas `restricted`/`private`; record `internal` terbaca lintas unit (docs/05 §1 lapis 3) tetapi tidak bisa diubah, dan field di atas internal tetap tersembunyi (ADR 0015). Feature test IDOR per endpoint, termasuk unduh berkas.
 - [x] Konflik edit (`lock_version`) menampilkan pesan dan opsi muat ulang.
 - [x] List 100.000 record fixture: p95 **7,5 ms** (filter enum terindeks) dan **94 ms** (cari judul), jauh di bawah 300 ms. Jalankan: `BARA_PERF=1 php artisan test --filter=ListPerformance`.
 - [x] Setiap create/update/delete tercatat di audit dengan diff. Nilai field terbatas/pribadi dan rich text disamarkan di audit.
@@ -85,14 +85,21 @@ Catatan implementasi M2:
 - Relasi sudah tersimpan di `record_links` dengan pilihan (maks. 200 opsi, ber-scope). Pencarian async, kolom relasi di daftar, dan eager load menyusul di M3. Aturan hapus `restrict`/`nullify` sudah aktif.
 - Field `region` ditampilkan sebagai "tersedia di M4" dan dilewati validasi sampai data wilayah dimuat.
 - `rich_text` memakai textarea + sanitasi HTML allowlist di server (symfony/html-sanitizer). Editor WYSIWYG aksesibel menyusul.
-- Lampiran: nama acak, MIME dideteksi dari isi, SHA-256, unduh hanya bila `scan_status = clean`. Pemindai (ClamAV) diaktifkan lewat `BARA_FILE_SCANNER=clamav`; tanpa pemindai berkas langsung `clean` (khusus dev).
+- Lampiran: nama acak, MIME dideteksi dari isi, SHA-256, unduh hanya bila `scan_status = clean`. Dengan `BARA_FILE_SCANNER=clamav` (default produksi) berkas tertahan `pending` sampai job `ScanUploadedFile` memindainya lewat clamd; berkas terinfeksi dihapus dari disk. Tanpa pemindai berkas langsung `clean` (khusus dev).
 - API record internal (JSON) ditunda ke M11 bersama OAuth2/Sanctum; endpoint web sudah menjawab 422 JSON untuk klien `Accept: application/json`.
+
+Remediasi audit M0–M2 (2026-09-27, 78 temuan; semua temuan Tinggi dan Sedang ditutup):
+
+- Keamanan data: clearance hanya dari role aplikasi dan hanya di unit yang di-grant (ADR 0015); judul record tanpa field di atas internal; judul/opsi relasi mengikuti cakupan pembaca dan permission `view` target; 2FA wajib di `/apps` untuk role berisiko tinggi; idle timeout 30 menit; cookie Secure; throttle tulis data; boot check konfigurasi produksi.
+- Integritas: job `MigrateRecordData` menjalankan konversi tipe & backfill yang dijanjikan diff; TRUNCATE audit ditolak; versi terbit tidak bisa dihapus/diturunkan; setiap Action metadata mencatat audit + outbox; `bara:assign-role` transaksional dengan audit + event `role.assigned`.
+- Aksesibilitas & UX: fokus dan batas input ≥ 3:1 (dicek `npm run check:contrast`), form auth/pengaturan memakai `Field` + `ErrorSummary`, dialog konfirmasi seragam, halaman error berbahasa Indonesia, skip link, pengumuman navigasi, peringatan sesi, zona waktu Pemda, format angka yang aman diedit ulang.
 
 ### M3 — Relationship
 
 - [ ] Relasi m2o & m2m, termasuk selector dengan pencarian async (debounce 300 ms, min 2 karakter).
 - [ ] List dengan 3 kolom relasi = jumlah query konstan (tes menghitung query, tanpa N+1).
 - [ ] Hapus target yang direferensikan → ditolak (`restrict`) atau dikosongkan (`nullify`) sesuai definisi.
+- [ ] Partial unique index `record_links (source_id) WHERE relationship_id = …` untuk setiap relasi many_to_one (sekarang hanya ditegakkan aplikasi).
 
 ### M4 — Shared master data
 
@@ -107,6 +114,10 @@ Catatan implementasi M2:
 - [ ] Field `personal` ter-mask untuk role tanpa clearance, di UI, API, export, maupun event.
 - [ ] RLS aktif di `objects`/`records`. Tes: query langsung tanpa `SET LOCAL` mengembalikan 0 baris private.
 - [ ] Role aplikasi tidak bisa diberi permission platform (tes).
+- [ ] Pemisahan role DB `bara_owner` (migration) / `bara_app` (aplikasi, hanya INSERT/SELECT pada `audit_logs`), sehingga DETACH/DROP partisi dan DISABLE TRIGGER tidak bisa dilakukan dengan kredensial aplikasi (ADR 0011).
+- [ ] Content-Security-Policy ber-nonce untuk semua halaman Inertia.
+- [ ] Entity dengan field `personal`/`personal_specific` wajib mengisi dasar pemrosesan, tujuan, dan masa retensi (docs/05 §3); job anonimisasi berjalan setelah retensi habis.
+- [ ] Delegasi metadata ke `app_admin` (draft per aplikasi, publish tetap butuh `platform.metadata.publish`) dan role `data_steward` (Walidata).
 
 ### M6 — Workflow
 

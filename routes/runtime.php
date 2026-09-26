@@ -16,10 +16,10 @@ Route::middleware(['auth', 'verified', EnsureTwoFactorForPrivilegedRoles::class]
         Route::get('/', [RecordController::class, 'home'])->name('home');
         Route::get('{app}/{entity}', [RecordController::class, 'index'])->name('index');
         Route::get('{app}/{entity}/create', [RecordController::class, 'create'])->name('create');
-        Route::post('{app}/{entity}', [RecordController::class, 'store'])->name('store');
+        Route::post('{app}/{entity}', [RecordController::class, 'store'])->middleware('throttle:runtime-write')->name('store');
         Route::get('{app}/{entity}/{record}', [RecordController::class, 'show'])->name('show');
         Route::get('{app}/{entity}/{record}/edit', [RecordController::class, 'edit'])->name('edit');
-        Route::put('{app}/{entity}/{record}', [RecordController::class, 'update'])->name('update');
-        Route::delete('{app}/{entity}/{record}', [RecordController::class, 'destroy'])->name('destroy');
+        Route::put('{app}/{entity}/{record}', [RecordController::class, 'update'])->middleware('throttle:runtime-write')->name('update');
+        Route::delete('{app}/{entity}/{record}', [RecordController::class, 'destroy'])->middleware('throttle:runtime-write')->name('destroy');
         Route::get('{app}/{entity}/{record}/files/{file}', [RecordController::class, 'download'])->name('files.download');
     });

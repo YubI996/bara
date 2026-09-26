@@ -60,34 +60,34 @@ CREATE POLICY objects_scope ON objects
 
 ## 2. Role bawaan
 
-| Role                      | Level    | Clearance           | Isi                                                                                                   |
-| ------------------------- | -------- | ------------------- | ----------------------------------------------------------------------------------------------------- |
-| `platform_admin`          | platform | `restricted`        | Kelola aplikasi, organisasi, role platform, codelist. Tidak otomatis membaca data personal.           |
-| `data_steward` (Walidata) | platform | `internal`          | Setujui consumer shared entity, publikasi data product, kualitas data                                 |
-| `dpo`                     | platform | `personal_specific` | Akses audit PII, DPIA, respons permintaan subjek data                                                 |
-| `app_admin`               | aplikasi | `internal`          | Kelola metadata app (draft), form, view, workflow app tsb. Publish butuh `platform.metadata.publish`. |
-| `operator`                | aplikasi | `internal`          | CRUD record dalam scope                                                                               |
-| `verifikator`             | aplikasi | `internal`          | Transisi verify/return/reject                                                                         |
-| `approver`                | aplikasi | `internal`          | Transisi approve/publish                                                                              |
-| `viewer`                  | aplikasi | `internal`          | Baca record & dashboard                                                                               |
-| `partner_contributor`     | aplikasi | `public`            | User eksternal: kelola contribution/evidence milik organisasinya                                      |
-| `auditor`                 | platform | `restricted`        | Baca audit log, read-only semua metadata                                                              |
+| Role                      | Level    | Clearance           | Isi                                                                                             |
+| ------------------------- | -------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| `platform_admin`          | platform | `restricted`        | Kelola aplikasi, organisasi, role platform, codelist. Tidak otomatis membaca data personal.     |
+| `data_steward` (Walidata) | platform | `internal`          | Setujui consumer shared entity, publikasi data product, kualitas data. **Dibuat di M5.**        |
+| `dpo`                     | platform | `personal_specific` | Akses audit PII, DPIA, respons permintaan subjek data                                           |
+| `app_admin`               | aplikasi | `internal`          | M2: CRUD + export record aplikasi. Delegasi metadata (draft, form, view, workflow) menyusul M5. |
+| `operator`                | aplikasi | `internal`          | CRUD record dalam scope                                                                         |
+| `verifikator`             | aplikasi | `internal`          | Transisi verify/return/reject                                                                   |
+| `approver`                | aplikasi | `internal`          | Transisi approve/publish                                                                        |
+| `viewer`                  | aplikasi | `internal`          | Baca record & dashboard                                                                         |
+| `partner_contributor`     | aplikasi | `public`            | User eksternal: kelola contribution/evidence milik organisasinya                                |
+| `auditor`                 | platform | `restricted`        | Baca audit log, read-only semua metadata                                                        |
 
-Role dan clearance yang lebih tinggi (`personal`) diberikan per aplikasi secara eksplisit dengan alasan tercatat.
+Role dan clearance yang lebih tinggi (`personal`) diberikan per aplikasi secara eksplisit dengan alasan tercatat. Clearance role platform tidak berlaku untuk data runtime (ADR 0015).
 
 ## 3. Pelindungan data pribadi (UU 27/2022 & PP 33/2026)
 
-| Kewajiban                                 | Implementasi di platform                                                                                                                                                              | Dasar                        |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Klasifikasi data pribadi umum vs spesifik | `fields.classification` (`personal` / `personal_specific`); wajib diisi saat membuat field. Wizard memberi peringatan jika label mengandung "NIK", "kesehatan", "agama", "anak", dst. | UU 27/2022 Pasal 4           |
-| Dasar pemrosesan & tujuan                 | `entities.config.processing_basis` + `purpose` wajib jika ada field personal. Ditampilkan di form sebagai pemberitahuan.                                                              | UU 27/2022 Pasal 20          |
-| Minimisasi                                | Field personal di-review oleh `dpo` sebelum entity dipublikasikan (gate di `PublishEntityVersion`)                                                                                    | UU 27/2022 Pasal 16 ayat (2) |
-| Penilaian dampak (DPIA)                   | Checklist DPIA terlampir pada entity dengan field `personal_specific` atau pemrosesan skala besar                                                                                     | UU 27/2022 Pasal 34          |
-| Pejabat PDP                               | Role `dpo`                                                                                                                                                                            | UU 27/2022 Pasal 53          |
-| Notifikasi kegagalan PDP                  | Runbook insiden (doc 13) dengan tenggat notifikasi                                                                                                                                    | UU 27/2022 Pasal 46          |
-| Hak subjek data (akses, koreksi, hapus)   | Fitur "Data Subject Request": cari semua objek yang terkait `core_persons.id` lewat `record_links`, lalu export/koreksi/anonimisasi                                                   | UU 27/2022 Pasal 5–13        |
-| Retensi                                   | `entities.config.retention_months`; job anonimisasi bulanan                                                                                                                           | UU 27/2022 Pasal 16 ayat (2) |
-| Aturan teknis pelaksanaan                 | PP 33/2026 berlaku **16 Januari 2027**. Detail kewajiban teknis pengendali perlu dipetakan ulang setelah teks final dibaca lengkap.                                                   | PP 33/2026                   |
+| Kewajiban                                 | Implementasi di platform                                                                                                                                                                     | Dasar                        |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Klasifikasi data pribadi umum vs spesifik | `fields.classification` (`personal` / `personal_specific`); wajib diisi saat membuat field. Wizard memberi peringatan jika label mengandung "NIK", "kesehatan", "agama", "anak", dst.        | UU 27/2022 Pasal 4           |
+| Dasar pemrosesan & tujuan                 | `entities.config.processing_basis` + `purpose` wajib jika ada field personal. Ditampilkan di form sebagai pemberitahuan. **Dijadwalkan M5** (sementara dijaga gate persetujuan Pejabat PDP). | UU 27/2022 Pasal 20          |
+| Minimisasi                                | Field personal di-review oleh `dpo` sebelum entity dipublikasikan (gate di `PublishEntityVersion`)                                                                                           | UU 27/2022 Pasal 16 ayat (2) |
+| Penilaian dampak (DPIA)                   | Checklist DPIA terlampir pada entity dengan field `personal_specific` atau pemrosesan skala besar                                                                                            | UU 27/2022 Pasal 34          |
+| Pejabat PDP                               | Role `dpo`                                                                                                                                                                                   | UU 27/2022 Pasal 53          |
+| Notifikasi kegagalan PDP                  | Runbook insiden (doc 13) dengan tenggat notifikasi                                                                                                                                           | UU 27/2022 Pasal 46          |
+| Hak subjek data (akses, koreksi, hapus)   | Fitur "Data Subject Request": cari semua objek yang terkait `core_persons.id` lewat `record_links`, lalu export/koreksi/anonimisasi                                                          | UU 27/2022 Pasal 5–13        |
+| Retensi                                   | `entities.config.retention_months`; job anonimisasi bulanan                                                                                                                                  | UU 27/2022 Pasal 16 ayat (2) |
+| Aturan teknis pelaksanaan                 | PP 33/2026 berlaku **16 Januari 2027**. Detail kewajiban teknis pengendali perlu dipetakan ulang setelah teks final dibaca lengkap.                                                          | PP 33/2026                   |
 
 > Nomor pasal di atas perlu diverifikasi terhadap teks resmi (JDIH BPK) sebelum dokumen ini dipakai sebagai rujukan formal. Tabel ini adalah pemetaan teknis, **bukan** nasihat hukum.
 
@@ -107,7 +107,7 @@ Role dan clearance yang lebih tinggi (`personal`) diberikan per aplikasi secara 
 1. **Identifier injection.** Kode entity/field divalidasi dengan regex `^[a-z][a-z0-9_]{1,62}$` dan tidak boleh berupa kata kunci SQL reserved. Di query, field JSONB diakses sebagai `data->>?` dengan binding. Nama kolom fisik diambil dari `physical_table` yang sudah di-whitelist lewat migration.
 2. **Stored XSS lewat label/help_text.** Semua metadata dirender React sebagai text (auto-escape). Field `rich_text` disanitasi server-side dengan allowlist tag (mis. `symfony/html-sanitizer`), dan `dangerouslySetInnerHTML` hanya dipakai untuk output sanitizer.
 3. **Mass assignment.** Payload record difilter ke field yang ada di `compiled_schema` versi aktif. Key lain ditolak (422), bukan diabaikan diam-diam.
-4. **File upload.** MIME dideteksi server, ada allowlist ekstensi per field, batas ukuran, nama file acak, disajikan lewat signed URL dengan `Content-Disposition: attachment`, dan dipindai ClamAV sebelum `scan_status = clean`.
+4. **File upload.** MIME dideteksi server, ada allowlist ekstensi per field, batas ukuran, nama file acak, disajikan lewat rute terautentikasi (`runtime.files.download`) yang memeriksa scope record, `FieldGate`, dan `scan_status = clean`, dengan `Content-Disposition: attachment` + `nosniff`, dan dipindai ClamAV (`ScanUploadedFile`) sebelum `scan_status = clean`. Signed URL hanya dipakai bila kelak berkas perlu dibagikan ke sistem lain (M11).
 5. **SSRF pada webhook.** URL webhook harus HTTPS, IP privat/loopback/link-local diblokir setelah resolusi DNS, domain di-allowlist oleh `platform_admin`, dan payload ditandatangani HMAC-SHA256.
 
 ## 5. Aksi yang wajib diaudit

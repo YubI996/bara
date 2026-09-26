@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Metadata\Actions;
 
 use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Eventing\Contracts\EventRecorder;
 use App\Modules\Metadata\Models\Entity;
 use Illuminate\Database\ConnectionInterface;
 
@@ -14,6 +15,7 @@ final readonly class DiscardDraft
     public function __construct(
         private ConnectionInterface $db,
         private AuditLogger $audit,
+        private EventRecorder $events,
     ) {}
 
     public function execute(Entity $entity): void
@@ -30,6 +32,7 @@ final readonly class DiscardDraft
             $draft->delete();
 
             $this->audit->log('metadata.draft_discard', $entity->id, 'metadata.entity', context: ['version' => $draft->version]);
+            $this->events->record('metadata.draft_discarded', 'metadata.entity', $entity->id, ['version' => $draft->version]);
         });
     }
 }

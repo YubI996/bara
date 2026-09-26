@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Metadata\Actions;
 
 use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Eventing\Contracts\EventRecorder;
 use App\Modules\Metadata\Models\Entity;
 use App\Modules\Metadata\Models\EntityVersion;
 use App\Modules\Metadata\Models\Field;
@@ -16,6 +17,7 @@ final readonly class CreateDraft
     public function __construct(
         private ConnectionInterface $db,
         private AuditLogger $audit,
+        private EventRecorder $events,
     ) {}
 
     public function execute(Entity $entity): EntityVersion
@@ -61,6 +63,7 @@ final readonly class CreateDraft
                 'version' => $next,
                 'based_on' => $published->version,
             ]);
+            $this->events->record('metadata.draft_created', 'metadata.entity', $entity->id, ['version' => $next]);
 
             return $draft;
         });

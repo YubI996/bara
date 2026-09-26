@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Metadata\Actions;
 
 use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Eventing\Contracts\EventRecorder;
 use App\Modules\Metadata\Contracts\FieldDefinition;
 use App\Modules\Metadata\Data\FieldInput;
 use App\Modules\Metadata\Models\Entity;
@@ -23,6 +24,7 @@ final readonly class SaveDraftField
         private FieldConfigValidator $validator,
         private RelationshipTargets $targets,
         private AuditLogger $audit,
+        private EventRecorder $events,
     ) {}
 
     public function execute(Entity $entity, FieldInput $input, ?Field $field = null): Field
@@ -85,6 +87,7 @@ final readonly class SaveDraftField
                 $this->audit->log('metadata.field_add', $entity->id, 'metadata.entity', [
                     $field->code => [null, $field->type],
                 ], ['version' => $draft->version]);
+                $this->events->record('metadata.draft_changed', 'metadata.entity', $entity->id, ['version' => $draft->version, 'field_key' => $field->field_key, 'change' => 'added']);
             } else {
                 $field = Field::query()->lockForUpdate()->findOrFail($field->id);
                 $field->fill($attributes);
@@ -97,6 +100,7 @@ final readonly class SaveDraftField
                 $field->save();
                 if ($changes !== []) {
                     $this->audit->log('metadata.field_update', $entity->id, 'metadata.entity', $changes, ['version' => $draft->version]);
+                    $this->events->record('metadata.draft_changed', 'metadata.entity', $entity->id, ['version' => $draft->version, 'field_key' => $field->field_key, 'change' => 'updated']);
                 }
             }
 

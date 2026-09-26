@@ -45,7 +45,11 @@ final readonly class RecordWriter
                 ->exists();
 
             if ($exists) {
-                $errors["data.{$field->code}"] = "{$field->label} sudah dipakai data lain.";
+                // Keunikan berlaku lintas unit; untuk field di atas internal pesan dibuat generik
+                // agar tidak menjadi oracle keberadaan nilai sensitif di unit lain (SEC-007).
+                $errors["data.{$field->code}"] = $field->classification->allowedInTitle()
+                    ? "{$field->label} sudah dipakai data lain."
+                    : "{$field->label} tidak dapat dipakai. Periksa kembali nilainya atau hubungi admin aplikasi.";
             }
         }
 

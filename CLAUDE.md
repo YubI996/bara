@@ -36,6 +36,7 @@ php artisan test                 # Pest: unit, feature, arch (butuh PostgreSQL, 
 vendor/bin/phpstan analyse       # PHPStan level max, tanpa baseline
 vendor/bin/pint --test           # format PHP
 npm run check && npm run types:check   # format + lint + typecheck TS
+npm run check:contrast           # kontras token warna (light & dark)
 npm run build                    # build aset (juga generate route Wayfinder)
 npm run test:e2e                 # Playwright + axe (DB bara_e2e, di-reset otomatis)
 ```
@@ -55,7 +56,13 @@ Agen AI: output tool dibungkus JSON oleh `laravel/pao`. Set `PAO_DISABLE=1` untu
 - Permission platform & role bawaan didefinisikan di enum `PlatformPermission` / `SystemRole`; jalankan `php artisan bara:sync-access` setelah mengubahnya (juga saat deploy).
 - Runtime record: `app/Modules/Data/Runtime` — `ScopedRecordQuery` (satu-satunya pintu query `records`/`objects`), `ScopeFactory`, `FieldGate`, `RecordValidator`, `RecordFilters` (containment JSONB, tanpa SQL dinamis). Data record berkunci `field_key` (ADR 0014).
 - Role aplikasi untuk tes: `userWithAppRole($app, 'operator', $unit)`; CLI: `php artisan bara:assign-role`.
-- Kontrak lintas modul yang sudah ada: `SchemaRepository`, `EntitySchema`, `OrganizationDirectory`, `AccessChecker`, `PermissionRegistry`, `ObjectRegistry`, `EntityCatalog`, `AuditLogger`, `EventRecorder`.
+- Clearance data (ADR 0015): `AccessChecker::clearance()` hanya dari role aplikasi; record di luar grant pembaca dibaca maksimal `internal` (`FieldGate::capped`, `RecordController::rowGate`). Judul record hanya dari field publik/internal.
+- Job latar: `ScanUploadedFile` (clamd), `EnsureRecordIndexes`, `MigrateRecordData` (rencana dari `MigrationPlanner` lewat event `EntityVersionPublished`). Semua idempoten.
+- UI aksi berdampak: `components/confirm-action.tsx` (dialog + status proses + error); aksi router tanpa form: `hooks/use-router-action.ts`. Jangan pakai `window.confirm`.
+- A11y global: skip link, `RouteAnnouncer`, `SessionTimeoutWarning` (di `app-sidebar-layout`), outline fokus global di `app.css`. Token warna baru wajib lolos `npm run check:contrast`.
+- Tanggal-waktu di UI memakai `usePemdaTimezone()` + `runtime/format.ts`; isian angka pakai `toNumberInput`.
+- Istilah UI: "kata sandi" (bukan password), "Alamat email".
+- Kontrak lintas modul yang sudah ada: `SchemaRepository`, `EntitySchema`, `OrganizationDirectory`, `AccessChecker`, `PermissionRegistry`, `ObjectRegistry`, `EntityCatalog`, `AuditLogger`, `EventRecorder`, `FieldMigration`.
 
 ## Bahasa
 
