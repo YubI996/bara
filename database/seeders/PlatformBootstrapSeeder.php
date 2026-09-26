@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Modules\Access\Contracts\PlatformPermission;
+use App\Modules\Access\Contracts\PermissionRegistry;
+use App\Modules\Access\Contracts\SystemRole;
 use App\Shared\Validation\Identifier;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -89,15 +90,9 @@ final class PlatformBootstrapSeeder extends Seeder
                 'updated_at' => now(),
             ]);
 
-            foreach (PlatformPermission::cases() as $permission) {
-                DB::table('permissions')->insert([
-                    'code' => $permission->value,
-                    'description' => $permission->description(),
-                ]);
-            }
-
-            $adminRoleId = $this->createSystemRole('platform_admin', 'Administrator Platform', PlatformPermission::cases());
-            $this->createSystemRole('auditor', 'Auditor', [PlatformPermission::OrganizationView, PlatformPermission::AuditView]);
+            app(PermissionRegistry::class)->syncSystemRoles();
+            $adminRoleId = DB::table('roles')
+                ->where('code', SystemRole::PlatformAdmin->value)->whereNull('application_id')->value('id');
 
             $adminId = Str::uuid7()->toString();
             DB::table('users')->insert([
@@ -134,28 +129,5 @@ final class PlatformBootstrapSeeder extends Seeder
             $this->command->warn("Password admin dibuat acak (tampil SEKALI): {$generatedPassword}");
             $this->command->warn('Segera login, ganti password, dan aktifkan 2FA.');
         }
-    }
-
-    /** @param  list<PlatformPermission>  $permissions */
-    private function createSystemRole(string $code, string $name, array $permissions): string
-    {
-        $id = Str::uuid7()->toString();
-
-        DB::table('roles')->insert([
-            'id' => $id,
-            'code' => $code,
-            'name' => $name,
-            'clearance' => 'restricted',
-            'is_system' => true,
-        ]);
-
-        foreach ($permissions as $permission) {
-            DB::table('role_permissions')->insert([
-                'role_id' => $id,
-                'permission_code' => $permission->value,
-            ]);
-        }
-
-        return $id;
     }
 }

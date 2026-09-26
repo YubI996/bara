@@ -11,9 +11,10 @@ supaya bisa bertukar data antar-Pemda.
 
 ## Status
 
-**M0 (Fondasi) selesai.** Tersedia: login + 2FA, struktur organisasi berhierarki (ltree),
-otorisasi berbasis scope unit, audit log append-only, dan outbox event. Berikutnya
-M1 (Metadata engine), lihat [roadmap](docs/12-roadmap-dan-milestone.md).
+**M0 (Fondasi) dan M1 (Metadata engine) selesai.** Tersedia: login + 2FA, struktur organisasi
+berhierarki (ltree), otorisasi berbasis scope unit, audit log append-only, outbox event, serta
+pembangun aplikasi → entity → field (15 tipe) dengan versi, diff perubahan, gate persetujuan
+Pejabat PDP, dan publikasi skema. Berikutnya M2 (Runtime CRUD), lihat [roadmap](docs/12-roadmap-dan-milestone.md).
 
 ## Menjalankan secara lokal (Windows + Laragon)
 
@@ -29,6 +30,7 @@ php artisan key:generate
 # isi DB_PASSWORD, BARA_PEMDA_CODE, BARA_PEMDA_NAME, BARA_ADMIN_EMAIL di .env
 psql -U bara -c "CREATE DATABASE bara" -c "CREATE DATABASE bara_test"
 php artisan migrate --seed      # password admin dicetak SEKALI bila BARA_ADMIN_PASSWORD kosong
+php artisan bara:sync-access    # jalankan juga setiap selesai git pull / deploy
 npm run build
 composer dev                    # server + queue + vite
 ```

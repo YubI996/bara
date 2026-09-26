@@ -57,13 +57,15 @@ Catatan implementasi M0:
 - Rebase `owner_path` dijalankan sinkron dalam transaksi. Job batch (doc 04 §2) baru dibutuhkan bila jumlah objek per unit sudah besar (M2+).
 - CSP ketat dengan nonce ditunda ke hardening R1. Header keamanan dasar sudah aktif.
 
-### M1 — Metadata engine
+### M1 — Metadata engine ✅ (selesai 2026-09-26)
 
-- [ ] Admin membuat application, entity, dan field (semua tipe di doc 06 §1 kecuali `geo_point`) lewat UI form.
-- [ ] Publish menghasilkan `entity_versions.compiled_schema`. Publish ulang tanpa perubahan ditolak.
-- [ ] Validasi kode identifier + reserved words, dengan unit test injeksi (`year; DROP`, `data->>`, unicode homoglyph).
-- [ ] Diff versi menampilkan kategori perubahan (doc 06 §4).
-- [ ] Permission entity dibuat otomatis saat publish.
+- [x] Admin membuat application, entity, dan field (15 tipe: semua tipe di doc 06 §1 kecuali `geo_point`) lewat UI form berbasis scope unit pemilik.
+- [x] Publish menghasilkan `entity_versions.compiled_schema`. Publish ulang tanpa perubahan ditolak. Versi terbit immutable (trigger DB).
+- [x] Validasi kode identifier + kata kunci SQL + kode yang dicadangkan, dengan tes injeksi (`year; DROP`, `data->>`, homoglyph Kiril, zero-width space, null byte).
+- [x] Diff versi menampilkan kategori perubahan (aman / perlu perhatian / migrasi / ditolak) per field.
+- [x] Permission entity dibuat otomatis saat publish.
+
+Tambahan di luar daftar awal: gate persetujuan Pejabat PDP untuk field data pribadi, pemeriksa ReDoS pada pola regex, peringatan label bernuansa data pribadi, tombol naik/turun urutan field (alternatif drag), dan `bara:sync-access` untuk menyamakan role bawaan.
 
 ### M2 — Runtime CRUD
 

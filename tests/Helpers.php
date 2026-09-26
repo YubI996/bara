@@ -3,10 +3,22 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Modules\Metadata\Actions\CreateApplication;
+use App\Modules\Metadata\Actions\CreateEntity;
+use App\Modules\Metadata\Actions\PublishEntityVersion;
+use App\Modules\Metadata\Actions\SaveDraftField;
+use App\Modules\Metadata\Data\ApplicationData;
+use App\Modules\Metadata\Data\EntityData;
+use App\Modules\Metadata\Data\FieldInput;
+use App\Modules\Metadata\Models\Application;
+use App\Modules\Metadata\Models\Entity;
+use App\Modules\Metadata\Models\EntityVersion;
+use App\Modules\Metadata\Models\Field;
 use App\Modules\Organization\Actions\CreateOrganization;
 use App\Modules\Organization\Data\CreateOrganizationData;
 use App\Modules\Organization\Enums\OrganizationKind;
 use App\Modules\Organization\Models\Organization;
+use App\Shared\Data\DataClassification;
 use Illuminate\Support\Facades\DB;
 
 function rootOrganization(): Organization
@@ -41,4 +53,59 @@ function userWithRole(string $roleCode, ?Organization $scope = null, bool $inclu
     ]);
 
     return $user;
+}
+
+function createApplication(string $code = 'monev', ?Organization $owner = null): Application
+{
+    return app(CreateApplication::class)->execute(new ApplicationData(
+        name: 'Aplikasi '.$code,
+        description: null,
+        ownerOrgId: ($owner ?? rootOrganization())->id,
+        status: 'active',
+        code: $code,
+    ));
+}
+
+function createEntity(Application $application, string $code = 'kegiatan', bool $shared = false, string $titleTemplate = ''): Entity
+{
+    return app(CreateEntity::class)->execute($application, new EntityData(
+        name: ucfirst($code),
+        namePlural: ucfirst($code),
+        description: null,
+        defaultVisibility: 'internal',
+        isShared: $shared,
+        titleTemplate: $titleTemplate,
+        code: $code,
+    ));
+}
+
+/** @param  array<string, mixed>  $config */
+function addField(
+    Entity $entity,
+    string $code,
+    string $type = 'string',
+    array $config = [],
+    bool $required = false,
+    DataClassification $classification = DataClassification::Internal,
+    ?string $label = null,
+    bool $indexed = false,
+): Field {
+    return app(SaveDraftField::class)->execute($entity->refresh(), new FieldInput(
+        code: $code,
+        label: $label ?? 'Label '.$code,
+        helpText: null,
+        type: $type,
+        required: $required,
+        unique: false,
+        indexed: $indexed,
+        searchable: false,
+        classification: $classification,
+        config: $config,
+    ));
+}
+
+function publishEntity(Entity $entity, ?User $publisher = null): EntityVersion
+{
+    return app(PublishEntityVersion::class)
+        ->execute($entity->refresh(), $publisher ?? userWithRole('platform_admin'));
 }

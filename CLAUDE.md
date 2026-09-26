@@ -3,7 +3,7 @@
 ## Proyek
 
 BARA: platform sistem informasi metadata-driven untuk satu Pemda (lihat `README.md`).
-Status: **M0 (Fondasi) selesai.** Berikutnya M1 (Metadata engine), lihat `docs/12-roadmap-dan-milestone.md`.
+Status: **M0 (Fondasi) dan M1 (Metadata engine) selesai.** Berikutnya M2 (Runtime CRUD), lihat `docs/12-roadmap-dan-milestone.md`.
 
 ## Wajib dibaca sebelum menulis kode
 
@@ -50,7 +50,10 @@ Agen AI: output tool dibungkus JSON oleh `laravel/pao`. Set `PAO_DISABLE=1` untu
 - Error bisnis ke form: `OrganizationRuleViolation::on('field', 'pesan')`.
 - Validasi kode identifier: `App\Shared\Validation\Identifier`.
 - Form aksesibel: `resources/js/components/form/{field,error-summary,native-select}.tsx`.
-- Helper test: `tests/Helpers.php` (`rootOrganization()`, `createOrganization()`, `userWithRole()`).
+- Helper test: `tests/Helpers.php` (`rootOrganization()`, `createOrganization()`, `userWithRole()`, `createApplication()`, `createEntity()`, `addField()`, `publishEntity()`).
+- Tipe field: implementasi `App\Modules\Metadata\Contracts\FieldType` di `app/Modules/Metadata/FieldTypes`, daftarkan di `Registry`. Tipe baru wajib lewat ADR.
+- Permission platform & role bawaan didefinisikan di enum `PlatformPermission` / `SystemRole`; jalankan `php artisan bara:sync-access` setelah mengubahnya (juga saat deploy).
+- Kontrak lintas modul yang sudah ada: `OrganizationDirectory`, `AccessChecker`, `PermissionRegistry`, `ObjectRegistry`, `EntityCatalog`, `AuditLogger`, `EventRecorder`.
 
 ## Bahasa
 

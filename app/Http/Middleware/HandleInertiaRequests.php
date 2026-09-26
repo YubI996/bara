@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Modules\Metadata\Models\Application;
 use App\Modules\Organization\Models\Organization;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -49,6 +50,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $this->presentUser($user),
                 'can' => [
                     'viewOrganizations' => $user !== null && $user->can('viewAny', Organization::class),
+                    'viewApplications' => $user !== null && $user->can('viewAny', Application::class),
                 ],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

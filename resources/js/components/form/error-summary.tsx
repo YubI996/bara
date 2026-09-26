@@ -1,5 +1,10 @@
 import { useEffect, useRef } from 'react';
 
+/** Kunci error Laravel (config.options.0.value) → id elemen (config_options_0_value). */
+export function fieldId(key: string): string {
+    return key.replace(/\./g, '_');
+}
+
 type Props = {
     errors: Partial<Record<string, string>>;
     /** Label field untuk tautan di ringkasan. Kunci = nama field = id input. */
@@ -42,10 +47,15 @@ export function ErrorSummary({ errors, labels }: Props) {
                 {entries.map(([field, message]) => (
                     <li key={field}>
                         <a
-                            href={`#${field}`}
+                            href={`#${fieldId(field)}`}
                             className="underline underline-offset-4"
                         >
-                            {labels[field] ?? field}: {message}
+                            {labels[field] ??
+                                labels[
+                                    field.split('.').slice(0, 2).join('.')
+                                ] ??
+                                field}
+                            : {message}
                         </a>
                     </li>
                 ))}

@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { Building2, LayoutGrid } from 'lucide-react';
+import { Boxes, Building2, LayoutGrid } from 'lucide-react';
+import ApplicationController from '@/actions/App/Modules/Metadata/Http/Controllers/ApplicationController';
 import OrganizationController from '@/actions/App/Modules/Organization/Http/Controllers/OrganizationController';
 import { dashboard } from '@/routes';
 import type { Auth, NavItem } from '@/types';
@@ -17,6 +18,14 @@ export function useMainNav(): NavItem[] {
             title: 'Organisasi',
             href: OrganizationController.index(),
             icon: Building2,
+        });
+    }
+
+    if (auth.can.viewApplications) {
+        items.push({
+            title: 'Aplikasi',
+            href: ApplicationController.index(),
+            icon: Boxes,
         });
     }
 

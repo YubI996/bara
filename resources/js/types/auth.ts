@@ -11,6 +11,7 @@ export type Auth = {
     user: User;
     can: {
         viewOrganizations: boolean;
+        viewApplications: boolean;
     };
 };
 

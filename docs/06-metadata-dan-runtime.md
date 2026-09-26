@@ -55,6 +55,17 @@ Entity (draft) + Fields + Relationships
 
 `compiled_schema` bersifat immutable, sehingga runtime cukup membaca satu baris JSON per versi (di-cache Redis dengan key `schema:{entity_version_id}` tanpa TTL).
 
+### Implementasi M1 (yang berbeda/lebih rinci dari rancangan)
+
+- **Isi `compiled_schema`**: `format`, `entity`, `version`, `fields` (definisi lengkap, sumber kebenaran versi terbit), `json_schema` (Draft 2020-12, `additionalProperties: false`), `ui`, `indexes`, `relationships`. Aturan validasi Laravel **tidak** disimpan: aturan diturunkan deterministik dari `fields` lewat `FieldType::valueRules()` saat runtime, karena objek rule tidak bisa diserialisasi dengan aman.
+- **Kontrak `FieldType`** (`app/Modules/Metadata/Contracts/FieldType.php`): `configRules()`, `normalizeConfig()`, `configErrors()`, `valueRules()` (kunci `''` dan `'.*'`), `jsonSchema()`, `cast()`, `sqlCast()`, `uiComponent()`, `supportsIndex/Search/Default()`.
+- **Relasi** didefinisikan di `fields.config` (`target_entity_id`, `cardinality`, `on_target_delete`, `inverse_code`). Registry `relationships` disinkronkan saat publikasi. Target yang boleh: entity satu aplikasi, entity `is_shared`, atau entity Core fisik. Pendaftaran consumer menyusul di M4.
+- **Gate Pejabat PDP**: draft yang menambah field data pribadi, menaikkan klasifikasi ke data pribadi, atau menurunkannya dari data pribadi harus disetujui user dengan permission `platform.privacy.review` (role `dpo`). Persetujuan tersimpan di draft dan **batal otomatis** bila draft diubah. `platform_admin` sengaja tidak memegang permission ini (pemisahan tugas).
+- **Pola regex** buatan admin diperiksa `SafeRegex`: maksimal 200 karakter, tanpa kuantifier bersarang dan backreference (mencegah ReDoS).
+- **Kode field dicadangkan**: `id`, `title`, `created_at`, `owner_org_id`, dan lainnya (`FieldConfigValidator::RESERVED_CODES`).
+- **Ubah tipe tidak kompatibel** selalu ditolak (lebih ketat dari §4). Alasannya: pemeriksaan "data gagal di-cast" baru mungkin setelah record ada (M2).
+- **Permission entity** `{app}.{entity}.{view|create|update|delete|export}` didaftarkan setiap publikasi (idempotent). Role aplikasi yang memakainya menyusul di M5.
+
 ## 3. Runtime CRUD
 
 ### Rute

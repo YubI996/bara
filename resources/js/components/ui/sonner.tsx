@@ -12,6 +12,13 @@ function Toaster({ ...props }: ToasterProps) {
             theme={appearance}
             className="toaster group"
             position="bottom-right"
+            // Toast bertumpuk dibuat transparan oleh sonner sehingga gagal kontras (WCAG 1.4.3):
+            // tampilkan terbentang dan beri waktu baca yang cukup (WCAG 2.2.1).
+            expand
+            visibleToasts={3}
+            duration={8000}
+            closeButton
+            toastOptions={{ closeButtonAriaLabel: 'Tutup notifikasi' }}
             style={
                 {
                     '--normal-bg': 'var(--popover)',
