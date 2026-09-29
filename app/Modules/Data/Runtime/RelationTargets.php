@@ -7,6 +7,7 @@ namespace App\Modules\Data\Runtime;
 use App\Models\User;
 use App\Modules\Metadata\Contracts\EntitySchema;
 use App\Modules\Metadata\Contracts\SchemaRepository;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
 
 /**
@@ -15,7 +16,9 @@ use Illuminate\Support\Str;
  */
 final readonly class RelationTargets
 {
-    public const int OPTION_LIMIT = 200;
+    public const int SEARCH_LIMIT = 20;
+
+    public const int MIN_TERM_LENGTH = 2;
 
     public const string OUT_OF_SCOPE_LABEL = '(di luar kewenangan Anda)';
 
@@ -61,21 +64,27 @@ final readonly class RelationTargets
     }
 
     /**
-     * Opsi pilihan (id + judul) untuk form. Pencarian async menyusul di M3.
+     * Pencarian target untuk EntitySelector (docs/06 §3): judul/nama cocok dengan `$term`,
+     * dibatasi cakupan baca user pada entity target. Tanpa preload ratusan opsi.
      *
      * @return list<array{value: string, label: string}>
      */
-    public function options(User $user, string $targetEntityId): array
+    public function search(User $user, string $targetEntityId, string $term, int $limit = self::SEARCH_LIMIT): array
     {
         $scope = $this->scopeFor($user, $targetEntityId);
-        $schema = $this->schemas->publishedById($targetEntityId);
+        $like = '%'.addcslashes($term, '%_\\').'%';
 
-        $rows = $schema !== null
-            ? $this->query->records($targetEntityId, $scope)->orderBy('r.title')->limit(self::OPTION_LIMIT)->get(['o.id', 'r.title'])
+        $rows = $this->schemas->publishedById($targetEntityId) !== null
+            ? $this->query->records($targetEntityId, $scope)
+                ->where(fn (Builder $q) => $q
+                    ->whereRaw("r.search @@ plainto_tsquery('simple', ?)", [$term])
+                    ->orWhere('r.title', 'ilike', $like))
+                ->orderBy('r.title')->limit($limit)->get(['o.id', 'r.title'])
             : $this->query->objects($targetEntityId, $scope)
                 ->join('core_organizations as c', 'c.id', '=', 'o.id')
                 ->whereRaw('(c.valid_to IS NULL OR c.valid_to > CURRENT_DATE)')
-                ->orderBy('c.path')->limit(self::OPTION_LIMIT)->get(['o.id', 'c.name as title']);
+                ->where('c.name', 'ilike', $like)
+                ->orderBy('c.path')->limit($limit)->get(['o.id', 'c.name as title']);
 
         $options = [];
         foreach ($rows as $row) {
@@ -119,5 +128,34 @@ final readonly class RelationTargets
         }
 
         return $titles;
+    }
+
+    /**
+     * URL halaman detail target yang terlihat pembaca (entity terbit saja; Core fisik tidak
+     * punya halaman runtime). Dipanggil setelah titles(): id berlabel netral tidak diberi URL.
+     *
+     * @param  array<string, list<string>>  $links
+     * @param  array<string, string>  $titles
+     * @return array<string, string>
+     */
+    public function urls(EntitySchema $schema, array $links, array $titles): array
+    {
+        $urls = [];
+        foreach ($schema->fields as $field) {
+            $target = $field->configValue('target_entity_id');
+            $targetSchema = $field->type === 'relationship' && is_string($target) && isset($links[$field->fieldKey])
+                ? $this->schemas->publishedById($target)
+                : null;
+            if ($targetSchema === null) {
+                continue;
+            }
+            foreach ($links[$field->fieldKey] as $id) {
+                if (($titles[$id] ?? self::OUT_OF_SCOPE_LABEL) !== self::OUT_OF_SCOPE_LABEL) {
+                    $urls[$id] = route('runtime.show', ['app' => $targetSchema->applicationCode, 'entity' => $targetSchema->entityCode, 'record' => $id], false);
+                }
+            }
+        }
+
+        return $urls;
     }
 }

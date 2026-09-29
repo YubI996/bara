@@ -7,7 +7,12 @@ export type RuntimeEntity = {
     version: number;
 };
 
-export type RuntimeOption = { value: string; label: string };
+export type RuntimeOption = {
+    value: string;
+    label: string;
+    /** Relasi: URL detail target bila terlihat oleh pembaca. */
+    url?: string | null;
+};
 
 export type RuntimeField = {
     code: string;
@@ -35,6 +40,8 @@ export type RuntimeField = {
     default: unknown;
     in_list: boolean;
     filterable: boolean;
+    /** Endpoint pencarian EntitySelector (hanya field relasi). */
+    lookup_url: string | null;
 };
 
 export type RuntimeFile = {

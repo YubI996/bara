@@ -11,12 +11,13 @@ supaya bisa bertukar data antar-Pemda.
 
 ## Status
 
-**M0 (Fondasi), M1 (Metadata engine), dan M2 (Runtime CRUD) selesai**, termasuk remediasi audit M0–M2. Tersedia: login + 2FA, struktur organisasi
+**M0 (Fondasi), M1 (Metadata engine), M2 (Runtime CRUD), dan M3 (Relationship) selesai**, termasuk remediasi audit M0–M2. Tersedia: login + 2FA, struktur organisasi
 berhierarki (ltree), otorisasi berbasis scope unit, audit log append-only, outbox event, serta
 pembangun aplikasi → entity → field (15 tipe) dengan versi, diff perubahan, gate persetujuan
 Pejabat PDP, publikasi skema, serta **halaman input data otomatis** untuk setiap entity terbit
 (daftar, tambah, detail, ubah, hapus, lampiran) yang dibatasi scope unit dan clearance data.
-Berikutnya M3 (Relationship), lihat [roadmap](docs/12-roadmap-dan-milestone.md).
+Relasi antar-entity (satu ke banyak & banyak ke banyak) dipilih lewat pencarian aksesibel dan bisa ditelusuri balik.
+Berikutnya M4 (Shared master data), lihat [roadmap](docs/12-roadmap-dan-milestone.md).
 
 ## Menjalankan secara lokal (Windows + Laragon)
 

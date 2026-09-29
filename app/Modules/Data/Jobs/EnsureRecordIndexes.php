@@ -96,5 +96,38 @@ final class EnsureRecordIndexes implements ShouldQueue
                 $db->statement("DROP INDEX {$concurrently}IF EXISTS {$name}");
             }
         }
+
+        $this->syncManyToOneIndexes($db, $audit, $concurrently);
+    }
+
+    /**
+     * docs/04 §4: satu tautan per source untuk relasi many_to_one, dijaga partial unique index
+     * per relationship (lapis DB di bawah RecordWriter::syncLinks).
+     */
+    private function syncManyToOneIndexes(ConnectionInterface $db, AuditLogger $audit, string $concurrently): void
+    {
+        $relationships = $db->table('relationships')->where('source_entity_id', $this->entityId)
+            ->get(['id', 'code', 'cardinality', 'is_active']);
+
+        foreach ($relationships as $rel) {
+            $id = is_string($rel->id ?? null) && Str::isUuid($rel->id) ? $rel->id : null;
+            if ($id === null) {
+                continue;
+            }
+
+            $name = 'rl_m2o_'.substr(hash('sha256', $id), 0, 24);
+            $wanted = ($rel->is_active ?? false) === true && ($rel->cardinality ?? null) === 'many_to_one';
+
+            try {
+                $db->statement($wanted
+                    ? "CREATE UNIQUE INDEX {$concurrently}IF NOT EXISTS {$name} ON record_links (source_id) WHERE relationship_id = '{$id}'"
+                    : "DROP INDEX {$concurrently}IF EXISTS {$name}");
+            } catch (QueryException $e) {
+                $audit->log('metadata.index_failed', $this->entityId, 'metadata.entity', context: [
+                    'relationship' => is_string($rel->code ?? null) ? $rel->code : $id,
+                    'sqlstate' => (string) $e->getCode(),
+                ]);
+            }
+        }
     }
 }

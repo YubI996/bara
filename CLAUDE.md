@@ -3,7 +3,7 @@
 ## Proyek
 
 BARA: platform sistem informasi metadata-driven untuk satu Pemda (lihat `README.md`).
-Status: **M0–M2 selesai** (fondasi, metadata engine, runtime CRUD). Berikutnya M3 (Relationship), lihat `docs/12-roadmap-dan-milestone.md`.
+Status: **M0–M3 selesai** (fondasi, metadata engine, runtime CRUD, relationship). Berikutnya M4 (Shared master data), lihat `docs/12-roadmap-dan-milestone.md`.
 
 ## Wajib dibaca sebelum menulis kode
 
@@ -57,6 +57,7 @@ Agen AI: output tool dibungkus JSON oleh `laravel/pao`. Set `PAO_DISABLE=1` untu
 - Runtime record: `app/Modules/Data/Runtime` — `ScopedRecordQuery` (satu-satunya pintu query `records`/`objects`), `ScopeFactory`, `FieldGate`, `RecordValidator`, `RecordFilters` (containment JSONB, tanpa SQL dinamis). Data record berkunci `field_key` (ADR 0014).
 - Role aplikasi untuk tes: `userWithAppRole($app, 'operator', $unit)`; CLI: `php artisan bara:assign-role`.
 - Clearance data (ADR 0015): `AccessChecker::clearance()` hanya dari role aplikasi; record di luar grant pembaca dibaca maksimal `internal` (`FieldGate::capped`, `RecordController::rowGate`). Judul record hanya dari field publik/internal.
+- Relasi (M3): cari target lewat `RelationTargets::search` (endpoint `runtime.lookup`), tautan daftar lewat `RecordWriter::linksFor` + `RelationTargets::titles` (tanpa N+1), navigasi balik `InverseRelations`. UI: `runtime/entity-selector.tsx` (combobox ARIA 1.2).
 - Job latar: `ScanUploadedFile` (clamd), `EnsureRecordIndexes`, `MigrateRecordData` (rencana dari `MigrationPlanner` lewat event `EntityVersionPublished`). Semua idempoten.
 - UI aksi berdampak: `components/confirm-action.tsx` (dialog + status proses + error); aksi router tanpa form: `hooks/use-router-action.ts`. Jangan pakai `window.confirm`.
 - A11y global: skip link, `RouteAnnouncer`, `SessionTimeoutWarning` (di `app-sidebar-layout`), outline fokus global di `app.css`. Token warna baru wajib lolos `npm run check:contrast`.

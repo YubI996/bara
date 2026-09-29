@@ -36,6 +36,12 @@ final class DataServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // SEC-007: batasi tulis data per user (juga menahan uji coba nilai unik berulang).
+        // Pencarian relasi: selector memanggil per ketikan (debounce 300 ms).
+        RateLimiter::for('runtime-lookup', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perMinute(120)->by($user instanceof User ? $user->id : (string) $request->ip());
+        });
         RateLimiter::for('runtime-write', function (Request $request): Limit {
             $user = $request->user();
 

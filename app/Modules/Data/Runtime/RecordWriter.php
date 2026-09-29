@@ -103,6 +103,37 @@ final readonly class RecordWriter
     }
 
     /**
+     * Tautan banyak record sekaligus (daftar): SATU query untuk seluruh halaman, bukan per baris
+     * (docs/04 §11, tanpa N+1).
+     *
+     * @param  list<string>  $sourceIds
+     * @return array<string, array<string, list<string>>> source id => field_key => target id
+     */
+    public function linksFor(EntitySchema $schema, array $sourceIds): array
+    {
+        if ($sourceIds === []) {
+            return [];
+        }
+
+        $rows = $this->db->table('record_links as l')
+            ->join('relationships as rel', 'rel.id', '=', 'l.relationship_id')
+            ->where('rel.source_entity_id', $schema->entityId)
+            ->where('rel.is_active', true)
+            ->whereIn('l.source_id', $sourceIds)
+            ->orderBy('l.source_id')->orderBy('l.position')
+            ->get(['l.source_id', 'rel.field_key', 'l.target_id']);
+
+        $links = [];
+        foreach ($rows as $row) {
+            if (is_string($row->source_id ?? null) && is_string($row->field_key ?? null) && is_string($row->target_id ?? null)) {
+                $links[$row->source_id][$row->field_key][] = $row->target_id;
+            }
+        }
+
+        return $links;
+    }
+
+    /**
      * Diff untuk audit, berkunci kode field. Nilai field data pribadi/terbatas tidak pernah
      * disalin ke audit: hanya ditandai berubah (docs/04 §9).
      *

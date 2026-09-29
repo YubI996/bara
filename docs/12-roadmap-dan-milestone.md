@@ -94,12 +94,20 @@ Remediasi audit M0–M2 (2026-09-27, 78 temuan; semua temuan Tinggi dan Sedang d
 - Integritas: job `MigrateRecordData` menjalankan konversi tipe & backfill yang dijanjikan diff; TRUNCATE audit ditolak; versi terbit tidak bisa dihapus/diturunkan; setiap Action metadata mencatat audit + outbox; `bara:assign-role` transaksional dengan audit + event `role.assigned`.
 - Aksesibilitas & UX: fokus dan batas input ≥ 3:1 (dicek `npm run check:contrast`), form auth/pengaturan memakai `Field` + `ErrorSummary`, dialog konfirmasi seragam, halaman error berbahasa Indonesia, skip link, pengumuman navigasi, peringatan sesi, zona waktu Pemda, format angka yang aman diedit ulang.
 
-### M3 — Relationship
+### M3 — Relationship ✅ (selesai 2026-09-29)
 
-- [ ] Relasi m2o & m2m, termasuk selector dengan pencarian async (debounce 300 ms, min 2 karakter).
-- [ ] List dengan 3 kolom relasi = jumlah query konstan (tes menghitung query, tanpa N+1).
-- [ ] Hapus target yang direferensikan → ditolak (`restrict`) atau dikosongkan (`nullify`) sesuai definisi.
-- [ ] Partial unique index `record_links (source_id) WHERE relationship_id = …` untuk setiap relasi many_to_one (sekarang hanya ditegakkan aplikasi).
+- [x] Relasi m2o & m2m, termasuk selector dengan pencarian async (debounce 300 ms, min 2 karakter): `EntitySelector` combobox ARIA 1.2 + endpoint `GET /apps/{app}/{entity}/lookup/{field}?q=`.
+- [x] List dengan 3 kolom relasi = jumlah query konstan (tes menghitung query, tanpa N+1).
+- [x] Hapus target yang direferensikan → ditolak (`restrict`, pesan menyebut entity perujuk) atau dikosongkan (`nullify`) sesuai definisi.
+- [x] Partial unique index `record_links (source_id) WHERE relationship_id = …` untuk setiap relasi many_to_one (dibuat/dihapus `EnsureRecordIndexes`).
+
+Catatan implementasi M3:
+
+- Lookup hanya untuk field relasi yang boleh ditulis user (permission create/update + FieldGate), hasil dibatasi cakupan baca user pada entity target (permission `view` target wajib, ADR 0015). Maks. 20 hasil, throttle 120/menit.
+- Form tidak lagi memuat opsi relasi di props; nilai terpilih dikirim sebagai label + id.
+- Daftar: tautan seluruh halaman diambil dengan satu query (`RecordWriter::linksFor`), judul target satu query per entity target (`RelationTargets::titles`).
+- Halaman detail: nilai relasi berupa tautan ke record target yang terlihat; panel **Dirujuk oleh** (navigasi balik) per relasi, dibatasi cakupan pembaca (`InverseRelations`).
+- Diuji: tes fitur `tests/Feature/Runtime/RelationshipTest.php`, e2e mengoperasikan selector hanya dengan keyboard dan memeriksa axe.
 
 ### M4 — Shared master data
 

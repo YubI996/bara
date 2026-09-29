@@ -79,8 +79,20 @@ test('form runtime dengan semua tipe field lolos WCAG 2.2 AA dan bisa diisi deng
     await tabTo(page, page.getByRole('checkbox', { name: 'Lansia' }));
     await kb.press('Space');
     await expect(page.getByRole('checkbox', { name: 'Lansia' })).toBeChecked();
-    await tabTo(page, page.getByLabel(/^Program/));
-    await page.getByLabel(/^Program/).selectOption({ label: program });
+    // EntitySelector: combobox dengan pencarian async (min. 2 huruf, debounce 300 ms).
+    const selector = page.getByRole('combobox', { name: /^Program/ });
+    await tabTo(page, selector);
+    await kb.type('P');
+    await expect(
+        page.getByText('Ketik minimal 2 huruf untuk mencari.'),
+    ).toBeVisible();
+    await kb.type(program.slice(1));
+    await expect(page.getByRole('option', { name: program })).toBeVisible();
+    await expect(page.getByText(/1 hasil/)).toBeVisible();
+    await expectNoA11yViolations(page);
+    await kb.press('ArrowDown');
+    await kb.press('Enter');
+    await expect(selector).toHaveValue(program);
     await tabTo(page, page.getByLabel(/^Lampiran|^Pilih berkas/));
     await page.getByLabel(/^Lampiran|^Pilih berkas/).setInputFiles({
         name: 'laporan.pdf',
@@ -92,11 +104,23 @@ test('form runtime dengan semua tipe field lolos WCAG 2.2 AA dan bisa diisi deng
 
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await expect(page.getByText('Rp 1.500.000,5')).toBeVisible();
-    await expect(page.getByText(program)).toBeVisible();
+    await expect(page.getByRole('link', { name: program })).toBeVisible();
     await expect(
         page.getByRole('link', { name: /Unduh laporan\.pdf/ }),
     ).toBeVisible();
     await expectNoA11yViolations(page);
+
+    // Navigasi balik: program menampilkan kegiatan yang merujuknya.
+    await page.getByRole('link', { name: program }).click();
+    await expect(
+        page.getByRole('heading', { name: 'Dirujuk oleh' }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: title })).toBeVisible();
+    await expectNoA11yViolations(page);
+    await page.getByRole('link', { name: title }).click();
+    await expect(
+        page.getByRole('heading', { level: 1, name: title }),
+    ).toBeVisible();
 
     // Halaman ubah memuat nilai tersimpan dengan format Indonesia (UX-003).
     await page.getByRole('link', { name: 'Ubah' }).click();

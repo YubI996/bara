@@ -79,7 +79,7 @@ GET    /apps/{app}/{entity}/{record}/edit     form
 PUT    /apps/{app}/{entity}/{record}          update  (butuh lock_version)
 DELETE /apps/{app}/{entity}/{record}          destroy (soft)
 POST   /apps/{app}/{entity}/{record}/actions/{action}   transisi workflow
-GET    /apps/{app}/{entity}/lookup?q=         untuk EntitySelector (JSON)
+GET    /apps/{app}/{entity}/lookup/{field}?q= untuk EntitySelector (JSON, min 2 karakter, maks 20 hasil)
 POST   /apps/{app}/{entity}/export            job export (CSV/XLSX)
 ```
 

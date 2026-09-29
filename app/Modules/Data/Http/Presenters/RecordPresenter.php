@@ -14,7 +14,7 @@ use App\Modules\Metadata\Contracts\FieldTypeRegistry;
 /** Bentuk props Inertia runtime. Semua nilai field lewat FieldGate (CLAUDE.md). */
 final readonly class RecordPresenter
 {
-    private const array LIST_TYPES = ['string', 'integer', 'decimal', 'money', 'percentage', 'boolean', 'date', 'datetime', 'enum'];
+    private const array LIST_TYPES = ['string', 'integer', 'decimal', 'money', 'percentage', 'boolean', 'date', 'datetime', 'enum', 'relationship'];
 
     /** Kunci config yang aman & berguna untuk UI (tanpa pola regex mentah dsb.). */
     private const array UI_CONFIG_KEYS = ['max_length', 'min', 'max', 'scale', 'mimes', 'max_files', 'max_kb', 'cardinality', 'max_selected'];
@@ -35,10 +35,11 @@ final readonly class RecordPresenter
     }
 
     /**
-     * @param  array<string, list<array{value: string, label: string}>>  $relationOptions  kode => opsi
+     * Opsi relasi tidak dikirim di sini: EntitySelector mencarinya lewat endpoint lookup.
+     *
      * @return list<array<string, mixed>>
      */
-    public function fields(EntitySchema $schema, FieldGate $gate, array $relationOptions = []): array
+    public function fields(EntitySchema $schema, FieldGate $gate): array
     {
         $out = [];
 
@@ -56,10 +57,13 @@ final readonly class RecordPresenter
                 'deferred' => in_array($field->type, RecordValidator::DEFERRED_TYPES, true),
                 'classification' => $field->classification->value,
                 'classification_label' => $field->classification->label(),
-                'options' => is_array($field->config['options'] ?? null) ? $field->config['options'] : ($relationOptions[$field->code] ?? []),
+                'options' => is_array($field->config['options'] ?? null) ? $field->config['options'] : [],
                 'config' => $config,
                 'default' => $field->configValue('default'),
                 'in_list' => in_array($field->type, self::LIST_TYPES, true),
+                'lookup_url' => $field->type === 'relationship'
+                    ? route('runtime.lookup', ['app' => $schema->applicationCode, 'entity' => $schema->entityCode, 'field' => $field->code], false)
+                    : null,
                 'filterable' => $field->indexed && $gate->access($field) === FieldGate::VISIBLE
                     && in_array($field->type, RecordFilters::FILTERABLE_TYPES, true)
                     && in_array($field->type, ['enum', 'boolean'], true),
@@ -76,9 +80,10 @@ final readonly class RecordPresenter
      * @param  array<string, list<string>>  $links  field_key => id target
      * @param  array<string, string>  $titles  id target => judul
      * @param  array<string, array<string, mixed>>  $files  id berkas => info
+     * @param  array<string, string>  $urls  id target => URL detail (hanya yang terlihat)
      * @return array<string, mixed>
      */
-    public function values(EntitySchema $schema, FieldGate $gate, array $data, array $links = [], array $titles = [], array $files = [], bool $listOnly = false): array
+    public function values(EntitySchema $schema, FieldGate $gate, array $data, array $links = [], array $titles = [], array $files = [], bool $listOnly = false, array $urls = []): array
     {
         $values = [];
         $listed = 0;
@@ -89,7 +94,7 @@ final readonly class RecordPresenter
             }
             $listed++;
 
-            $values[$field->code] = $gate->present($field, $this->raw($field, $data, $links, $titles, $files));
+            $values[$field->code] = $gate->present($field, $this->raw($field, $data, $links, $titles, $files, $urls));
         }
 
         return $values;
@@ -100,12 +105,13 @@ final readonly class RecordPresenter
      * @param  array<string, list<string>>  $links
      * @param  array<string, string>  $titles
      * @param  array<string, array<string, mixed>>  $files
+     * @param  array<string, string>  $urls
      */
-    private function raw(FieldDefinition $field, array $data, array $links, array $titles, array $files): mixed
+    private function raw(FieldDefinition $field, array $data, array $links, array $titles, array $files, array $urls): mixed
     {
         if ($field->type === 'relationship') {
             return array_map(
-                fn (string $id): array => ['value' => $id, 'label' => $titles[$id] ?? '(tidak tersedia)'],
+                fn (string $id): array => ['value' => $id, 'label' => $titles[$id] ?? '(tidak tersedia)', 'url' => $urls[$id] ?? null],
                 $links[$field->fieldKey] ?? [],
             );
         }

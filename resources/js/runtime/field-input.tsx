@@ -1,5 +1,6 @@
 import { fieldId } from '@/components/form/error-summary';
 import { Field } from '@/components/form/field';
+import { EntitySelector } from './entity-selector';
 import { NativeSelect } from '@/components/form/native-select';
 import { Textarea } from '@/components/form/textarea';
 import { Input } from '@/components/ui/input';
@@ -337,37 +338,23 @@ export function FieldInput({ field, value, errors, timezone }: Props) {
                                 ))}
                             </NativeSelect>
                         );
-                    case 'EntitySelector': {
-                        const many =
-                            field.config.cardinality === 'many_to_many';
-                        const selected = isOptionList(defaultValue)
-                            ? defaultValue.map((o) => o.value)
-                            : [];
-                        return (
-                            <NativeSelect
-                                {...aria}
-                                name={many ? `${name}[]` : name}
-                                multiple={many}
-                                defaultValue={
-                                    many ? selected : (selected[0] ?? '')
+                    case 'EntitySelector':
+                        return field.lookup_url ? (
+                            <EntitySelector
+                                aria={aria}
+                                name={name}
+                                label={field.label}
+                                lookupUrl={field.lookup_url}
+                                multiple={
+                                    field.config.cardinality === 'many_to_many'
                                 }
-                                className={many ? 'h-auto min-h-32' : undefined}
-                            >
-                                {!many && (
-                                    <option value="">
-                                        {field.required
-                                            ? 'Pilih data'
-                                            : 'Tidak ada'}
-                                    </option>
-                                )}
-                                {field.options.map((o) => (
-                                    <option key={o.value} value={o.value}>
-                                        {o.label}
-                                    </option>
-                                ))}
-                            </NativeSelect>
-                        );
-                    }
+                                initial={
+                                    isOptionList(defaultValue)
+                                        ? defaultValue
+                                        : []
+                                }
+                            />
+                        ) : null;
                     default:
                         return (
                             <Input

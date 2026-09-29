@@ -13,6 +13,7 @@ use App\Modules\Data\Http\Presenters\RecordPresenter;
 use App\Modules\Data\Runtime\AccessScope;
 use App\Modules\Data\Runtime\FieldGate;
 use App\Modules\Data\Runtime\FileStore;
+use App\Modules\Data\Runtime\InverseRelations;
 use App\Modules\Data\Runtime\JsonData;
 use App\Modules\Data\Runtime\RecordFilters;
 use App\Modules\Data\Runtime\RecordValidator;
@@ -28,6 +29,7 @@ use App\Shared\Data\DataClassification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -52,6 +54,7 @@ final readonly class RecordController
         private OrganizationDirectory $organizations,
         private FileStore $files,
         private RecordFilters $filters,
+        private InverseRelations $inverse,
     ) {}
 
     /** Daftar entity yang boleh dilihat user, dikelompokkan per aplikasi. */
@@ -96,15 +99,31 @@ final readonly class RecordController
             ->cursorPaginate(config()->integer('bara.records.page_size'), ['r.id', 'r.title', 'r.data', 'r.created_at', 'o.owner_org_id', 'o.owner_path'], 'cursor')
             ->withQueryString();
 
-        $rows = [];
+        /** @var array<string, object> $items id => baris */
+        $items = [];
         foreach ($page->items() as $row) {
-            if (! is_object($row) || ! isset($row->id, $row->title)) {
-                continue;
+            if (is_object($row) && is_string($row->id ?? null) && isset($row->title)) {
+                $items[$row->id] = $row;
             }
+        }
+
+        // Kolom relasi: tautan seluruh halaman dalam satu query, judul target satu query per
+        // entity target (bukan per baris), docs/04 §11.
+        $links = $this->writer->linksFor($schema, array_map(strval(...), array_keys($items)));
+        $merged = [];
+        foreach ($links as $byField) {
+            foreach ($byField as $fieldKey => $ids) {
+                $merged[$fieldKey] = [...($merged[$fieldKey] ?? []), ...$ids];
+            }
+        }
+        $titles = $this->targets->titles($user, $schema, $merged);
+
+        $rows = [];
+        foreach ($items as $id => $row) {
             $rows[] = [
-                'id' => $row->id,
-                'title' => $row->title,
-                'values' => $this->presenter->values($schema, $this->rowGate($gate, $granted, $row), JsonData::decode($row->data ?? null), listOnly: true),
+                'id' => $id,
+                'title' => $row->title ?? '',
+                'values' => $this->presenter->values($schema, $this->rowGate($gate, $granted, $row), JsonData::decode($row->data ?? null), $links[$id] ?? [], $titles, listOnly: true),
             ];
         }
 
@@ -150,6 +169,7 @@ final readonly class RecordController
         $gate = $this->rowGate($this->gate($user, $schema), $this->scopes->granted($user, $schema), $row);
         $data = JsonData::decode($row->data ?? null);
         $links = $this->writer->links($schema, $record);
+        $titles = $this->targets->titles($user, $schema, $links);
 
         return Inertia::render('runtime/show', [
             'entity' => $this->presenter->entity($schema),
@@ -157,16 +177,43 @@ final readonly class RecordController
             'record' => [
                 'id' => $record,
                 'title' => $row->title ?? '',
-                'values' => $this->presenter->values($schema, $gate, $data, $links, $this->targets->titles($user, $schema, $links), $this->fileInfo($record, $app, $entity)),
+                'values' => $this->presenter->values($schema, $gate, $data, $links, $titles, $this->fileInfo($record, $app, $entity), urls: $this->targets->urls($schema, $links, $titles)),
                 'owner_name' => is_string($row->owner_org_id ?? null) ? $this->organizations->find($row->owner_org_id)?->name : null,
                 'created_at' => $row->created_at ?? null,
                 'updated_at' => $row->updated_at ?? null,
                 'version' => ($row->entity_version_id ?? null) === $schema->entityVersionId ? $schema->version : null,
             ],
+            'referenced_by' => $this->inverse->for($user, $schema, $record),
             'can' => [
                 'update' => $this->covers($user, $schema, 'update', $row),
                 'delete' => $this->covers($user, $schema, 'delete', $row),
             ],
+        ]);
+    }
+
+    /**
+     * Pencarian target relasi untuk EntitySelector (docs/06 §3). Hanya untuk field relasi yang
+     * boleh ditulis user; hasil dibatasi cakupan baca user pada entity target.
+     */
+    public function lookup(Request $request, string $app, string $entity, string $field): JsonResponse
+    {
+        $user = $this->user($request);
+        $schema = $this->viewable($user, $app, $entity);
+        $this->ensure($this->scopes->can($user, $schema, 'create') || $this->scopes->can($user, $schema, 'update'));
+
+        $definition = $schema->field($field);
+        $target = $definition?->configValue('target_entity_id');
+
+        if ($definition === null || $definition->type !== 'relationship' || ! is_string($target)
+            || ! $this->gate($user, $schema)->canWrite($definition)) {
+            throw new NotFoundHttpException;
+        }
+
+        $term = $request->string('q')->squish()->limit(100, '')->toString();
+
+        return response()->json([
+            'options' => mb_strlen($term) < RelationTargets::MIN_TERM_LENGTH ? [] : $this->targets->search($user, $target, $term),
+            'limit' => RelationTargets::SEARCH_LIMIT,
         ]);
     }
 
@@ -239,14 +286,6 @@ final readonly class RecordController
     private function form(User $user, EntitySchema $schema, ?array $record): Response
     {
         $gate = $this->gate($user, $schema);
-        $relationOptions = [];
-
-        foreach ($schema->fields as $field) {
-            $target = $field->configValue('target_entity_id');
-            if ($field->type === 'relationship' && is_string($target) && $gate->canWrite($field)) {
-                $relationOptions[$field->code] = $this->targets->options($user, $target);
-            }
-        }
 
         $owners = array_map(
             static fn (OrganizationSummary $o): array => ['value' => $o->id, 'label' => $o->name, 'depth' => $o->depth],
@@ -255,7 +294,7 @@ final readonly class RecordController
 
         return Inertia::render('runtime/form', [
             'entity' => $this->presenter->entity($schema),
-            'fields' => $this->presenter->fields($schema, $gate, $relationOptions),
+            'fields' => $this->presenter->fields($schema, $gate),
             'record' => $record,
             'owners' => $owners,
             'default_owner_id' => in_array($user->primary_org_id, array_column($owners, 'value'), true) ? $user->primary_org_id : ($owners[0]['value'] ?? null),

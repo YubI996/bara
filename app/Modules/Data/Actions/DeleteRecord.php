@@ -9,6 +9,7 @@ use App\Modules\Data\Runtime\AccessScope;
 use App\Modules\Data\Runtime\ScopedRecordQuery;
 use App\Modules\Eventing\Contracts\EventRecorder;
 use App\Modules\Metadata\Contracts\EntitySchema;
+use App\Modules\Metadata\Contracts\SchemaRepository;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Query\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -17,6 +18,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 final readonly class DeleteRecord
 {
     public function __construct(
+        private SchemaRepository $schemas,
         private ConnectionInterface $db,
         private ScopedRecordQuery $query,
         private AuditLogger $audit,
@@ -33,17 +35,26 @@ final readonly class DeleteRecord
                 throw new NotFoundHttpException;
             }
 
-            $referenced = $this->db->table('record_links as l')
+            $referencing = $this->db->table('record_links as l')
                 ->join('relationships as rel', 'rel.id', '=', 'l.relationship_id')
                 ->join('records as src', 'src.id', '=', 'l.source_id')
                 ->where('l.target_id', $recordId)
                 ->where('rel.is_active', true)
                 ->where('rel.on_target_delete', 'restrict')
                 ->whereNull('src.deleted_at')
-                ->exists();
+                ->groupBy('rel.source_entity_id')
+                ->selectRaw('rel.source_entity_id, count(*) as total')
+                ->get();
 
-            if ($referenced) {
-                throw RecordRuleViolation::on('record', 'Data ini masih dirujuk data lain sehingga tidak dapat dihapus.');
+            if ($referencing->isNotEmpty()) {
+                $parts = [];
+                foreach ($referencing as $ref) {
+                    $source = is_string($ref->source_entity_id ?? null) ? $this->schemas->publishedById($ref->source_entity_id) : null;
+                    $total = is_numeric($ref->total ?? null) ? (int) $ref->total : 0;
+                    $parts[] = $total.' '.($source !== null ? $source->entityNamePlural : 'data lain');
+                }
+
+                throw RecordRuleViolation::on('record', 'Data ini masih dirujuk oleh '.implode(', ', $parts).' sehingga tidak dapat dihapus. Ubah atau hapus data yang merujuk terlebih dahulu.');
             }
 
             $this->db->table('record_links as l')

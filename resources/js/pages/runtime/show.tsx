@@ -10,6 +10,7 @@ import {
     formatDateTime,
     formatValue,
     isFileList,
+    isOptionList,
 } from '@/runtime/format';
 import type { RuntimeEntity, RuntimeField, RuntimeValues } from '@/types';
 
@@ -24,10 +25,24 @@ type Props = {
         created_at: string | null;
         updated_at: string | null;
     };
+    referenced_by: {
+        relationship: string;
+        label: string;
+        application_code: string;
+        entity_code: string;
+        count: number;
+        items: { id: string; title: string }[];
+    }[];
     can: { update: boolean; delete: boolean };
 };
 
-export default function RecordShow({ entity, fields, record, can }: Props) {
+export default function RecordShow({
+    entity,
+    fields,
+    record,
+    referenced_by,
+    can,
+}: Props) {
     const route = {
         app: entity.application_code,
         entity: entity.code,
@@ -93,7 +108,11 @@ export default function RecordShow({ entity, fields, record, can }: Props) {
                                 <ConfirmAction
                                     trigger="Hapus…"
                                     title={`Hapus “${record.title}”?`}
-                                    description="Data akan dihapus dari daftar dan tidak bisa dipulihkan sendiri. Hubungi admin bila perlu dipulihkan. Penghapusan ditolak bila data ini masih dirujuk data lain."
+                                    description={
+                                        referenced_by.length > 0
+                                            ? `Data ini dirujuk oleh ${referenced_by.map((g) => `${g.count} ${g.label}`).join(', ')}. Penghapusan ditolak bila relasinya bersifat wajib (restrict); relasi lain akan dikosongkan. Hubungi admin bila data perlu dipulihkan.`
+                                            : 'Data akan dihapus dari daftar dan tidak bisa dipulihkan sendiri. Hubungi admin bila perlu dipulihkan.'
+                                    }
                                     confirmLabel="Ya, hapus"
                                     processingLabel="Menghapus…"
                                     method="delete"
@@ -145,6 +164,28 @@ export default function RecordShow({ entity, fields, record, can }: Props) {
                                                 ))}
                                             </ul>
                                         )
+                                    ) : field.type === 'relationship' &&
+                                      isOptionList(value) ? (
+                                        value.length === 0 ? (
+                                            '—'
+                                        ) : (
+                                            <ul className="grid gap-1">
+                                                {value.map((o) => (
+                                                    <li key={o.value}>
+                                                        {o.url ? (
+                                                            <Link
+                                                                href={o.url}
+                                                                className="underline underline-offset-4"
+                                                            >
+                                                                {o.label}
+                                                            </Link>
+                                                        ) : (
+                                                            o.label
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )
                                     ) : field.type === 'rich_text' &&
                                       typeof value === 'string' ? (
                                         // HTML sudah disanitasi allowlist di server (RichTextSanitizer).
@@ -188,6 +229,52 @@ export default function RecordShow({ entity, fields, record, can }: Props) {
                         );
                     })}
                 </dl>
+
+                {referenced_by.length > 0 && (
+                    <section
+                        aria-labelledby="referenced-by-title"
+                        className="max-w-3xl space-y-3"
+                    >
+                        <h2
+                            id="referenced-by-title"
+                            className="text-lg font-semibold"
+                        >
+                            Dirujuk oleh
+                        </h2>
+                        {referenced_by.map((group) => (
+                            <div
+                                key={group.relationship}
+                                className="rounded-lg border p-4"
+                            >
+                                <h3 className="font-medium">
+                                    {group.label}: {group.count} data
+                                </h3>
+                                <ul className="mt-2 list-disc space-y-1 pl-5">
+                                    {group.items.map((item) => (
+                                        <li key={item.id}>
+                                            <Link
+                                                href={RecordController.show({
+                                                    app: group.application_code,
+                                                    entity: group.entity_code,
+                                                    record: item.id,
+                                                })}
+                                                className="underline underline-offset-4"
+                                            >
+                                                {item.title}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                                {group.count > group.items.length && (
+                                    <p className="mt-2 text-sm text-muted-foreground">
+                                        Menampilkan {group.items.length} terbaru
+                                        dari {group.count}.
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </section>
+                )}
             </div>
         </>
     );

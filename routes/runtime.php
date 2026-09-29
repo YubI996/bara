@@ -17,6 +17,8 @@ Route::middleware(['auth', 'verified', EnsureTwoFactorForPrivilegedRoles::class]
         Route::get('{app}/{entity}', [RecordController::class, 'index'])->name('index');
         Route::get('{app}/{entity}/create', [RecordController::class, 'create'])->name('create');
         Route::post('{app}/{entity}', [RecordController::class, 'store'])->middleware('throttle:runtime-write')->name('store');
+        Route::get('{app}/{entity}/lookup/{field}', [RecordController::class, 'lookup'])
+            ->where('field', '[a-z][a-z0-9_]{1,62}')->middleware('throttle:runtime-lookup')->name('lookup');
         Route::get('{app}/{entity}/{record}', [RecordController::class, 'show'])->name('show');
         Route::get('{app}/{entity}/{record}/edit', [RecordController::class, 'edit'])->name('edit');
         Route::put('{app}/{entity}/{record}', [RecordController::class, 'update'])->middleware('throttle:runtime-write')->name('update');
