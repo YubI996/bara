@@ -33,6 +33,19 @@ final readonly class DatabaseObjectRegistry implements ObjectRegistry
         return $id;
     }
 
+    public function registerMany(string $entityId, string $ownerOrgId, string $ownerPath, Visibility $visibility, array $ids): void
+    {
+        foreach (array_chunk($ids, 1000) as $chunk) {
+            $this->db->table('objects')->insert(array_map(fn (string $id): array => [
+                'id' => $id,
+                'entity_id' => $entityId,
+                'owner_org_id' => $ownerOrgId,
+                'owner_path' => $ownerPath,
+                'visibility' => $visibility->value,
+            ], $chunk));
+        }
+    }
+
     public function rebaseOwnerPaths(string $oldPath, string $newPath): int
     {
         return $this->db->update(

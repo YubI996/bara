@@ -26,7 +26,8 @@ return new class extends Migration
                 CHECK ((level = 1) = (parent_id IS NULL))
             );
             CREATE INDEX core_regions_parent_idx ON core_regions (parent_id);
-            CREATE INDEX core_regions_name_trgm ON core_regions USING gin (name gin_trgm_ops);
+            -- Ekspresi sama persis dengan label di core_object_labels agar pencarian relasi memakai index.
+            CREATE INDEX core_regions_label_trgm ON core_regions USING gin ((name || ' (' || code || ')') gin_trgm_ops);
 
             CREATE TABLE core_persons (
                 id         uuid PRIMARY KEY REFERENCES objects(id),
@@ -43,7 +44,7 @@ return new class extends Migration
                 updated_at timestamptz NOT NULL DEFAULT now(),
                 CHECK ((nik_hash IS NULL) = (nik_enc IS NULL))
             );
-            CREATE INDEX core_persons_name_trgm ON core_persons USING gin (full_name gin_trgm_ops);
+            CREATE INDEX core_persons_label_trgm ON core_persons USING gin ((full_name || COALESCE(' · NIK ****' || nik_last4, '')) gin_trgm_ops);
 
             CREATE TABLE core_employees (
                 id         uuid PRIMARY KEY REFERENCES objects(id),

@@ -29,6 +29,8 @@ export function useRouterAction() {
             method,
             data: options.data ?? {},
             preserveScroll: true,
+            // Pertahankan state komponen (mis. dialog tetap terbuka) bila server mengembalikan error.
+            preserveState: 'errors',
             onStart: () => {
                 setProcessing(true);
                 setErrors([]);

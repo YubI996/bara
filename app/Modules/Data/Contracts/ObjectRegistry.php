@@ -20,6 +20,13 @@ interface ObjectRegistry
     ): string;
 
     /**
+     * Pendaftaran massal (impor master data): satu INSERT per batch, bukan per baris.
+     *
+     * @param  list<string>  $ids  id yang sudah dibuat pemanggil (UUIDv7)
+     */
+    public function registerMany(string $entityId, string $ownerOrgId, string $ownerPath, Visibility $visibility, array $ids): void;
+
+    /**
      * Memindahkan owner_path semua objek di bawah $oldPath ke $newPath (restrukturisasi organisasi).
      *
      * @return int jumlah objek yang diperbarui

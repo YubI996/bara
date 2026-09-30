@@ -26,6 +26,9 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="HASH_DRIVER" value="bcrypt"/>
         <env name="BARA_CONCURRENT_INDEX" value="false"/>
+        <!-- Hanya untuk tes; produksi memakai rahasia sendiri (docs/13). -->
+        <env name="BARA_NIK_PEPPER" value="test-pepper-0123456789abcdef0123456789abcdef"/>
+        <env name="BARA_PII_KEY" value="base64:MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="pgsql"/>

@@ -13,6 +13,16 @@ final readonly class EloquentOrganizationDirectory implements OrganizationDirect
 {
     public function __construct(private OrganizationQuery $query) {}
 
+    public function root(): OrganizationSummary
+    {
+        return $this->summarize(Organization::query()->whereNull('parent_id')->firstOrFail());
+    }
+
+    public function linkRegion(string $organizationId, ?string $regionId): void
+    {
+        Organization::query()->whereKey($organizationId)->update(['region_id' => $regionId]);
+    }
+
     public function find(string $id): ?OrganizationSummary
     {
         $org = Str::isUuid($id) ? Organization::query()->find($id) : null;

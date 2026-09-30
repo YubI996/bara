@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\EnsureTwoFactorEnabled;
+use App\Modules\MasterData\Http\Controllers\MasterDataController;
+use App\Modules\MasterData\Http\Controllers\PersonController;
 use App\Modules\Metadata\Http\Controllers\ApplicationController;
 use App\Modules\Metadata\Http\Controllers\ConsumerController;
 use App\Modules\Metadata\Http\Controllers\EntityController;
@@ -56,4 +58,31 @@ Route::middleware(['auth', 'verified', EnsureTwoFactorEnabled::class])
         Route::put('entities/{entity}/fields/{field}', [FieldController::class, 'update'])->name('fields.update');
         Route::delete('entities/{entity}/fields/{field}', [FieldController::class, 'destroy'])->name('fields.destroy');
         Route::post('entities/{entity}/fields/{field}/move', [FieldController::class, 'move'])->name('fields.move');
+    });
+
+Route::middleware(['auth', 'verified', EnsureTwoFactorEnabled::class])
+    ->prefix('admin/master-data')
+    ->name('admin.master-data.')
+    ->whereUuid(['fiscalYear', 'person', 'employee'])
+    ->group(function (): void {
+        Route::get('/', [MasterDataController::class, 'index'])->name('index');
+        Route::get('regions', [MasterDataController::class, 'regions'])->name('regions');
+        Route::get('fiscal-years', [MasterDataController::class, 'fiscalYears'])->name('fiscal-years');
+        Route::post('fiscal-years', [MasterDataController::class, 'storeFiscalYear'])->name('fiscal-years.store');
+        Route::post('fiscal-years/{fiscalYear}/status', [MasterDataController::class, 'changeFiscalYearStatus'])->name('fiscal-years.status');
+
+        Route::get('persons', [PersonController::class, 'index'])->name('persons.index');
+        Route::post('persons/search', [PersonController::class, 'index'])->middleware('throttle:60,1')->name('persons.search');
+        Route::get('persons/create', [PersonController::class, 'create'])->name('persons.create');
+        Route::post('persons', [PersonController::class, 'store'])->name('persons.store');
+        Route::get('persons/{person}', [PersonController::class, 'show'])->name('persons.show');
+        Route::get('persons/{person}/edit', [PersonController::class, 'edit'])->name('persons.edit');
+        Route::put('persons/{person}', [PersonController::class, 'update'])->name('persons.update');
+        // Membuka NIK: konfirmasi kata sandi ulang + alasan, dibatasi laju (docs/05 §3).
+        Route::post('persons/{person}/reveal-nik', [PersonController::class, 'reveal'])
+            ->middleware(['password.confirm', 'throttle:10,1'])->name('persons.reveal');
+        // Setelah konfirmasi kata sandi Laravel kembali ke URL ini dengan GET.
+        Route::get('persons/{person}/reveal-nik', [PersonController::class, 'afterPasswordConfirm'])->name('persons.reveal.return');
+        Route::post('persons/{person}/employments', [PersonController::class, 'addEmployment'])->name('persons.employments.store');
+        Route::post('persons/{person}/employments/{employee}/end', [PersonController::class, 'endEmployment'])->name('persons.employments.end');
     });

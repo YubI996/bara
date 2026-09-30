@@ -63,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
             'APP_DEBUG harus false' => config()->boolean('app.debug'),
             'BARA_FILE_SCANNER tidak boleh none' => config()->string('bara.files.scanner') === 'none',
             'SESSION_SECURE_COOKIE harus true' => config('session.secure') !== true,
+            'BARA_NIK_PEPPER & BARA_PII_KEY wajib diisi' => strlen(config()->string('bara.pii.nik_pepper')) < 32 || config()->string('bara.pii.key') === '',
         ]));
 
         if ($problems !== []) {

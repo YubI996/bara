@@ -11,13 +11,15 @@ supaya bisa bertukar data antar-Pemda.
 
 ## Status
 
-**M0 (Fondasi), M1 (Metadata engine), M2 (Runtime CRUD), dan M3 (Relationship) selesai**, termasuk remediasi audit M0–M2. Tersedia: login + 2FA, struktur organisasi
+**M0–M4 selesai** (fondasi, metadata engine, runtime CRUD, relationship, shared master data), termasuk remediasi audit M0–M2. Tersedia: login + 2FA, struktur organisasi
 berhierarki (ltree), otorisasi berbasis scope unit, audit log append-only, outbox event, serta
 pembangun aplikasi → entity → field (15 tipe) dengan versi, diff perubahan, gate persetujuan
 Pejabat PDP, publikasi skema, serta **halaman input data otomatis** untuk setiap entity terbit
 (daftar, tambah, detail, ubah, hapus, lampiran) yang dibatasi scope unit dan clearance data.
 Relasi antar-entity (satu ke banyak & banyak ke banyak) dipilih lewat pencarian aksesibel dan bisa ditelusuri balik.
-Berikutnya M4 (Shared master data), lihat [roadmap](docs/12-roadmap-dan-milestone.md).
+Master data bersama (wilayah Kemendagri, orang & pegawai dengan NIK terenkripsi, tahun anggaran)
+hanya bisa dirujuk aplikasi setelah disetujui Walidata.
+Berikutnya M5 (Access hardening), lihat [roadmap](docs/12-roadmap-dan-milestone.md).
 
 ## Menjalankan secara lokal (Windows + Laragon)
 
@@ -34,6 +36,12 @@ php artisan key:generate
 psql -U bara -c "CREATE DATABASE bara" -c "CREATE DATABASE bara_test"
 php artisan migrate --seed      # password admin dicetak SEKALI bila BARA_ADMIN_PASSWORD kosong
 php artisan bara:sync-access    # jalankan juga setiap selesai git pull / deploy
+php artisan bara:sync-core      # entity master data Core (idempoten)
+php artisan bara:pii-key        # salin 2 baris hasilnya ke .env (BARA_PII_KEY, BARA_NIK_PEPPER)
+# kode wilayah (sekali; berkas dari github.com/cahyadsn/wilayah, lisensi MIT):
+# php artisan bara:import-regions wilayah.sql --source-ref="Kepmendagri 300.2.2-2430 Tahun 2025"
+# Walidata (menyetujui pemakaian master data):
+# php artisan bara:assign-role admin@example.test data_steward pemda --force
 # beri diri Anda role operator aplikasi (setelah entity pertama terbit):
 # php artisan bara:assign-role admin@example.test operator pemda --app=monev
 npm run build
@@ -76,6 +84,7 @@ Checklist lengkap di [docs/13](docs/13-nfr-dan-operasional.md).
 | Auth               | Lokal + siap OIDC SSO; API mesin via OAuth2 client credentials        | [0013](docs/adr/0013-authentication.md)                            |
 | Kunci data record  | JSONB berkunci `field_key` stabil, bukan kode field                   | [0014](docs/adr/0014-record-data-keyed-by-field-key.md)            |
 | Clearance data     | Hanya dari role aplikasi, berlaku di unit yang di-grant               | [0015](docs/adr/0015-clearance-scoped-to-application-and-grant.md) |
+| Master data & NIK  | Consumer disetujui Walidata; NIK HMAC + AES-256-GCM, buka tercatat    | [0016](docs/adr/0016-shared-master-data-and-consumers.md)          |
 
 ## Peta dokumen
 

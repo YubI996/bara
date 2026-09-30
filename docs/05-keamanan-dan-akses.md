@@ -60,18 +60,18 @@ CREATE POLICY objects_scope ON objects
 
 ## 2. Role bawaan
 
-| Role                      | Level    | Clearance           | Isi                                                                                             |
-| ------------------------- | -------- | ------------------- | ----------------------------------------------------------------------------------------------- |
-| `platform_admin`          | platform | `restricted`        | Kelola aplikasi, organisasi, role platform, codelist. Tidak otomatis membaca data personal.     |
-| `data_steward` (Walidata) | platform | `internal`          | Setujui consumer shared entity, publikasi data product, kualitas data. **Dibuat di M5.**        |
-| `dpo`                     | platform | `personal_specific` | Akses audit PII, DPIA, respons permintaan subjek data                                           |
-| `app_admin`               | aplikasi | `internal`          | M2: CRUD + export record aplikasi. Delegasi metadata (draft, form, view, workflow) menyusul M5. |
-| `operator`                | aplikasi | `internal`          | CRUD record dalam scope                                                                         |
-| `verifikator`             | aplikasi | `internal`          | Transisi verify/return/reject                                                                   |
-| `approver`                | aplikasi | `internal`          | Transisi approve/publish                                                                        |
-| `viewer`                  | aplikasi | `internal`          | Baca record & dashboard                                                                         |
-| `partner_contributor`     | aplikasi | `public`            | User eksternal: kelola contribution/evidence milik organisasinya                                |
-| `auditor`                 | platform | `restricted`        | Baca audit log, read-only semua metadata                                                        |
+| Role                      | Level    | Clearance           | Isi                                                                                                |
+| ------------------------- | -------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| `platform_admin`          | platform | `restricted`        | Kelola aplikasi, organisasi, role platform, codelist. Tidak otomatis membaca data personal.        |
+| `data_steward` (Walidata) | platform | `internal`          | Setujui consumer entity bersama, kelola master data, buka NIK (tercatat). **Sejak M4** (ADR 0016). |
+| `dpo`                     | platform | `personal_specific` | Akses audit PII, DPIA, respons permintaan subjek data                                              |
+| `app_admin`               | aplikasi | `internal`          | M2: CRUD + export record aplikasi. Delegasi metadata (draft, form, view, workflow) menyusul M5.    |
+| `operator`                | aplikasi | `internal`          | CRUD record dalam scope                                                                            |
+| `verifikator`             | aplikasi | `internal`          | Transisi verify/return/reject                                                                      |
+| `approver`                | aplikasi | `internal`          | Transisi approve/publish                                                                           |
+| `viewer`                  | aplikasi | `internal`          | Baca record & dashboard                                                                            |
+| `partner_contributor`     | aplikasi | `public`            | User eksternal: kelola contribution/evidence milik organisasinya                                   |
+| `auditor`                 | platform | `restricted`        | Baca audit log, read-only semua metadata                                                           |
 
 Role dan clearance yang lebih tinggi (`personal`) diberikan per aplikasi secara eksplisit dengan alasan tercatat. Clearance role platform tidak berlaku untuk data runtime (ADR 0015).
 

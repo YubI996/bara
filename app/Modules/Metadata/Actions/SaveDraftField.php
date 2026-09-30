@@ -59,6 +59,13 @@ final readonly class SaveDraftField
                         && $target->applicationId !== $entity->application_id
                         ? "Aplikasi ini belum disetujui Walidata sebagai pemakai {$target->label()}. Ajukan pemakaian di halaman aplikasi."
                         : 'Pilih entity target yang sudah terbit, dalam aplikasi ini atau yang sudah disetujui untuk dipakai.';
+                } else {
+                    $target = $this->targets->find($targetId);
+                    // ADR 0016: judul orang/pegawai adalah data pribadi → field relasinya harus pribadi.
+                    if ($target !== null && $target->applicationCode === 'core' && in_array($target->code, ['person', 'employee'], true)
+                        && ! $input->classification->isPersonal()) {
+                        $errors['classification'] = "Relasi ke {$target->label()} memuat data pribadi; pilih klasifikasi Data pribadi umum atau spesifik.";
+                    }
                 }
             }
 

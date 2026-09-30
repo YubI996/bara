@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { e2eEnv } from './env';
 
 /** Reset database E2E sebelum seluruh tes (kode pemulihan 2FA bersifat sekali pakai). */
 export default function globalSetup(): void {
@@ -15,7 +16,7 @@ export default function globalSetup(): void {
             stdio: 'inherit',
             env: {
                 ...process.env,
-                DB_DATABASE: process.env.E2E_DB_DATABASE ?? 'bara_e2e',
+                ...e2eEnv,
             },
         },
     );

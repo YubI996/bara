@@ -18,4 +18,10 @@ interface OrganizationDirectory
      * @return list<OrganizationSummary>
      */
     public function activeWithin(array $grants): array;
+
+    /** Unit akar (Pemda). Pemilik master data bersama. */
+    public function root(): OrganizationSummary;
+
+    /** Tautkan unit ke kode wilayah Kemendagri (core_regions.id). */
+    public function linkRegion(string $organizationId, ?string $regionId): void;
 }

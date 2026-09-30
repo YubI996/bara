@@ -109,12 +109,20 @@ Catatan implementasi M3:
 - Halaman detail: nilai relasi berupa tautan ke record target yang terlihat; panel **Dirujuk oleh** (navigasi balik) per relasi, dibatasi cakupan pembaca (`InverseRelations`).
 - Diuji: tes fitur `tests/Feature/Runtime/RelationshipTest.php`, e2e mengoperasikan selector hanya dengan keyboard dan memeriksa axe.
 
-### M4 — Shared master data
+### M4 — Shared master data ✅ (selesai 2026-09-30)
 
-- [ ] Core.Organization/Region/Person/Employee/FiscalYear bisa dipilih sebagai target relasi dari app lain **hanya** setelah consumer disetujui.
-- [ ] Seed wilayah dari Kepmendagri 300.2.2-2430/2025 (atau yang terbaru saat implementasi) dengan `source_ref`.
-- [ ] Consumer tidak bisa mengubah master data (tes 403).
-- [ ] NIK disimpan sebagai HMAC + terenkripsi. Tampilan NIK memerlukan clearance dan tercatat `pii.revealed`.
+- [x] Core.Organization/Region/Person/Employee/FiscalYear bisa dipilih sebagai target relasi dari app lain **hanya** setelah consumer disetujui Walidata (ditegakkan saat simpan field, publikasi, dan runtime; ADR 0016).
+- [x] Seed wilayah dari **Kepmendagri 300.2.2-2430 Tahun 2025** (perubahan atas 300.2.2-2138/2025; dicek 2026-09-30, belum ditemukan pengganti) dengan `source_ref`: `php artisan bara:import-regions <berkas> --source-ref=…`. 91.599 kode diimpor dalam ±7 detik; impor ulang idempoten.
+- [x] Consumer tidak bisa mengubah master data maupun data/metadata aplikasi pemilik (tes 403).
+- [x] NIK disimpan sebagai HMAC + terenkripsi (AES-256-GCM, kunci terpisah). Tampilan NIK memerlukan permission Walidata, konfirmasi kata sandi, alasan, dan tercatat `pii.revealed`.
+
+Catatan implementasi M4:
+
+- Role baru `data_steward` (Walidata). Admin platform mengajukan pemakaian di halaman aplikasi; Walidata memutuskan di **Persetujuan pemakaian**.
+- Consumer `reference` yang disetujui melihat target lewat visibilitas saja (publik/internal); relasi ke orang/pegawai wajib berklasifikasi pribadi.
+- Halaman **Master data**: wilayah (jelajah per tingkat + cari, trigram index), orang & pegawai (NIK tersamar, cari NIK lewat POST), tahun anggaran (satu berjalan).
+- Label semua objek Core untuk pemilih relasi lewat view `core_object_labels` (pencarian wilayah 0,6 ms di 91 ribu baris).
+- Belum: polygon wilayah (M14), penautan `users.person_id` lewat UI, sinkronisasi SIASN/Dukcapil (M13).
 
 ### M5 — Access hardening
 
@@ -125,7 +133,7 @@ Catatan implementasi M3:
 - [ ] Pemisahan role DB `bara_owner` (migration) / `bara_app` (aplikasi, hanya INSERT/SELECT pada `audit_logs`), sehingga DETACH/DROP partisi dan DISABLE TRIGGER tidak bisa dilakukan dengan kredensial aplikasi (ADR 0011).
 - [ ] Content-Security-Policy ber-nonce untuk semua halaman Inertia.
 - [ ] Entity dengan field `personal`/`personal_specific` wajib mengisi dasar pemrosesan, tujuan, dan masa retensi (docs/05 §3); job anonimisasi berjalan setelah retensi habis.
-- [ ] Delegasi metadata ke `app_admin` (draft per aplikasi, publish tetap butuh `platform.metadata.publish`) dan role `data_steward` (Walidata).
+- [ ] Delegasi metadata ke `app_admin` (draft per aplikasi, publish tetap butuh `platform.metadata.publish`).
 
 ### M6 — Workflow
 

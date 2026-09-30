@@ -34,6 +34,14 @@ return [
         'trusted_proxies' => env('BARA_TRUSTED_PROXIES', ''),
     ],
 
+    // Data pribadi master (ADR 0016). Keduanya rahasia, di luar database dan terpisah dari APP_KEY.
+    'pii' => [
+        // Pepper HMAC NIK (≥ 32 karakter). Mengganti pepper = semua nik_hash harus dihitung ulang.
+        'nik_pepper' => env('BARA_NIK_PEPPER', ''),
+        // Kunci AES-256-GCM untuk nik_enc: "base64:" + 32 byte. Buat: php artisan bara:pii-key
+        'key' => env('BARA_PII_KEY', ''),
+    ],
+
     'files' => [
         'disk' => env('BARA_FILES_DISK', 'local'),
         // none = tanpa pemindai (hanya dev/test); clamav = pindai sebelum boleh diunduh.

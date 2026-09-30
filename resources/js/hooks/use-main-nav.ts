@@ -4,9 +4,11 @@ import {
     Building2,
     Database,
     LayoutGrid,
+    Library,
     ShieldCheck,
 } from 'lucide-react';
 import RecordController from '@/actions/App/Modules/Data/Http/Controllers/RecordController';
+import MasterDataController from '@/actions/App/Modules/MasterData/Http/Controllers/MasterDataController';
 import ApplicationController from '@/actions/App/Modules/Metadata/Http/Controllers/ApplicationController';
 import ConsumerController from '@/actions/App/Modules/Metadata/Http/Controllers/ConsumerController';
 import OrganizationController from '@/actions/App/Modules/Organization/Http/Controllers/OrganizationController';
@@ -35,6 +37,14 @@ export function useMainNav(): NavItem[] {
             title: 'Aplikasi',
             href: ApplicationController.index(),
             icon: Boxes,
+        });
+    }
+
+    if (auth.can.viewMasterData) {
+        items.push({
+            title: 'Master data',
+            href: MasterDataController.index(),
+            icon: Library,
         });
     }
 

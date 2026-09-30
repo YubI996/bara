@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { e2eEnv } from './tests/e2e/env';
 
 const port = Number(process.env.E2E_PORT ?? 8123);
 
@@ -54,7 +55,7 @@ export default defineConfig({
         command: `php artisan serve --host=127.0.0.1 --port=${port}`,
         url: `http://127.0.0.1:${port}/up`,
         reuseExistingServer: !process.env.CI,
-        env: { DB_DATABASE: process.env.E2E_DB_DATABASE ?? 'bara_e2e' },
+        env: e2eEnv,
         timeout: 60_000,
     },
 });

@@ -93,8 +93,11 @@ Ukuran awal (asumsi doc 01 §6): app 2 × (4 vCPU, 8 GB), worker 1 × (4 vCPU, 8
     (trigger `audit_logs_append_only` dan `audit_logs_no_truncate` tetap menjadi lapis kedua).
 3. clamd berjalan dan terjangkau lewat `BARA_CLAMAV_SOCKET`; uji dengan berkas EICAR → status `infected`.
 4. Worker antrean aktif (`php artisan queue:work`) untuk `ScanUploadedFile`, `EnsureRecordIndexes`, `MigrateRecordData`.
-5. `php artisan migrate --force`, `php artisan bara:sync-access`, `php artisan bara:audit-partitions`.
+5. `php artisan migrate --force`, `php artisan bara:sync-access`, `php artisan bara:sync-core`, `php artisan bara:audit-partitions`.
 6. Verifikasi header di balik proxy: `Strict-Transport-Security` ada, cookie sesi `Secure; HttpOnly; SameSite=Lax`.
+7. Rahasia PII (`php artisan bara:pii-key` sekali saat instalasi): `BARA_PII_KEY` dan `BARA_NIK_PEPPER` di secret manager, terpisah dari `APP_KEY`, dengan cadangan offline. Kehilangan kunci = NIK tidak bisa dibuka; mengganti pepper = `nik_hash` harus dihitung ulang.
+8. Kode wilayah: unduh berkas sesuai Kepmendagri terbaru lalu `php artisan bara:import-regions <berkas> --source-ref="Kepmendagri …"`. Ulangi setiap ada Kepmendagri baru (idempoten).
+9. Tetapkan minimal satu Walidata: `php artisan bara:assign-role <email> data_steward <kode-pemda> --force`.
 
 ## 7. Runbook insiden (ringkas)
 
