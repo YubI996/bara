@@ -86,3 +86,19 @@ export type VersionSummary = {
     change_summary: string | null;
     published_at: string | null;
 };
+
+/** Pendaftaran consumer entity bersama (ADR 0016). */
+export type ConsumerRow = {
+    entity_id: string;
+    application_id: string;
+    entity: string;
+    application: string;
+    status: 'pending' | 'approved' | 'rejected' | 'revoked';
+    status_label: string;
+    reason: string;
+    requested_by: string;
+    requested_at: string | null;
+    decided_by: string | null;
+    decided_at: string | null;
+    decision_note: string | null;
+};

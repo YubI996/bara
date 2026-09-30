@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Metadata\Providers;
 
+use App\Modules\Metadata\Contracts\ConsumerRegistry;
 use App\Modules\Metadata\Contracts\EntityCatalog;
 use App\Modules\Metadata\Contracts\FieldTypeRegistry;
 use App\Modules\Metadata\Contracts\SchemaRepository;
 use App\Modules\Metadata\FieldTypes\Registry;
+use App\Modules\Metadata\Infrastructure\DatabaseConsumerRegistry;
 use App\Modules\Metadata\Infrastructure\DatabaseEntityCatalog;
 use App\Modules\Metadata\Infrastructure\EloquentRelationshipTargets;
 use App\Modules\Metadata\Infrastructure\EloquentSchemaRepository;
@@ -29,6 +31,7 @@ final class MetadataServiceProvider extends ServiceProvider
         ));
         $this->app->singleton(FieldTypeRegistry::class, Registry::class);
         $this->app->scoped(RelationshipTargets::class, EloquentRelationshipTargets::class);
+        $this->app->scoped(ConsumerRegistry::class, DatabaseConsumerRegistry::class);
         $this->app->scoped(SchemaRepository::class, EloquentSchemaRepository::class);
     }
 

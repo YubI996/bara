@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Middleware\EnsureTwoFactorEnabled;
 use App\Modules\Metadata\Http\Controllers\ApplicationController;
+use App\Modules\Metadata\Http\Controllers\ConsumerController;
 use App\Modules\Metadata\Http\Controllers\EntityController;
 use App\Modules\Metadata\Http\Controllers\FieldController;
 use App\Modules\Organization\Http\Controllers\OrganizationController;
@@ -35,6 +36,10 @@ Route::middleware(['auth', 'verified', EnsureTwoFactorEnabled::class])
         Route::get('applications/{application}', [ApplicationController::class, 'show'])->name('applications.show');
         Route::get('applications/{application}/edit', [ApplicationController::class, 'edit'])->name('applications.edit');
         Route::put('applications/{application}', [ApplicationController::class, 'update'])->name('applications.update');
+        Route::post('applications/{application}/consumers', [ConsumerController::class, 'store'])->name('consumers.store');
+
+        Route::get('consumers', [ConsumerController::class, 'index'])->name('consumers.index');
+        Route::post('consumers/{entity}/{application}', [ConsumerController::class, 'decide'])->name('consumers.decide');
 
         Route::get('applications/{application}/entities/create', [EntityController::class, 'create'])->name('entities.create');
         Route::post('applications/{application}/entities', [EntityController::class, 'store'])->name('entities.store');

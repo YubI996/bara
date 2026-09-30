@@ -46,9 +46,9 @@ final readonly class ScopedRecordQuery
     {
         $rows = $this->objects($entityId, $scope)
             ->leftJoin('records as r', 'r.id', '=', 'o.id')
-            ->leftJoin('core_organizations as c', 'c.id', '=', 'o.id')
+            ->leftJoin('core_object_labels as c', 'c.id', '=', 'o.id')
             ->whereIn('o.id', $ids)
-            ->get(['o.id', 'r.title', 'c.name']);
+            ->get(['o.id', 'r.title', 'c.label as name']);
 
         $titles = [];
         foreach ($rows as $row) {

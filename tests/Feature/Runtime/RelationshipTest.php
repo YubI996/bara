@@ -26,6 +26,7 @@ beforeEach(function (): void {
     addField($this->sasaran, 'nama', 'string', required: true);
     publishEntity($this->sasaran);
 
+    approveConsumer($this->monev, coreEntityId('organization'));
     $this->kegiatan = createEntity($this->monev, 'kegiatan', titleTemplate: '{nama}');
     addField($this->kegiatan, 'nama', 'string', required: true);
     addField($this->kegiatan, 'program', 'relationship', ['target_entity_id' => $this->program->id, 'cardinality' => 'many_to_one', 'on_target_delete' => 'restrict']);

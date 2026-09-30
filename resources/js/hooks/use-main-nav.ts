@@ -1,7 +1,14 @@
 import { usePage } from '@inertiajs/react';
-import { Boxes, Building2, Database, LayoutGrid } from 'lucide-react';
+import {
+    Boxes,
+    Building2,
+    Database,
+    LayoutGrid,
+    ShieldCheck,
+} from 'lucide-react';
 import RecordController from '@/actions/App/Modules/Data/Http/Controllers/RecordController';
 import ApplicationController from '@/actions/App/Modules/Metadata/Http/Controllers/ApplicationController';
+import ConsumerController from '@/actions/App/Modules/Metadata/Http/Controllers/ConsumerController';
 import OrganizationController from '@/actions/App/Modules/Organization/Http/Controllers/OrganizationController';
 import { dashboard } from '@/routes';
 import type { Auth, NavItem } from '@/types';
@@ -28,6 +35,14 @@ export function useMainNav(): NavItem[] {
             title: 'Aplikasi',
             href: ApplicationController.index(),
             icon: Boxes,
+        });
+    }
+
+    if (auth.can.approveConsumers) {
+        items.push({
+            title: 'Persetujuan pemakaian',
+            href: ConsumerController.index(),
+            icon: ShieldCheck,
         });
     }
 

@@ -105,7 +105,7 @@ final readonly class RecordValidator
                 $ids = is_array($value) ? $value : ($value === null ? [] : [$value]);
                 $ids = array_values(array_filter($ids, 'is_string'));
                 $target = $field->configValue('target_entity_id');
-                $visible = is_string($target) ? $this->targets->visible($user, $target, $ids) : [];
+                $visible = is_string($target) ? $this->targets->visible($user, $schema->applicationId, $target, $ids) : [];
 
                 if (count($visible) !== count(array_unique($ids))) {
                     $errors["data.{$code}"] = ["{$field->label} merujuk data yang tidak ditemukan atau di luar kewenangan Anda."];

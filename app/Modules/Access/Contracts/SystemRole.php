@@ -12,6 +12,7 @@ enum SystemRole: string
     case PlatformAdmin = 'platform_admin';
     case Auditor = 'auditor';
     case Dpo = 'dpo';
+    case DataSteward = 'data_steward';
 
     public function label(): string
     {
@@ -19,6 +20,7 @@ enum SystemRole: string
             self::PlatformAdmin => 'Administrator Platform',
             self::Auditor => 'Auditor',
             self::Dpo => 'Pejabat Pelindungan Data Pribadi',
+            self::DataSteward => 'Walidata',
         };
     }
 
@@ -26,13 +28,14 @@ enum SystemRole: string
     {
         return match ($this) {
             self::PlatformAdmin, self::Auditor => DataClassification::Restricted,
+            self::DataSteward => DataClassification::Internal,
             self::Dpo => DataClassification::PersonalSpecific,
         };
     }
 
     /**
-     * Administrator sengaja TIDAK memegang PrivacyReview: persetujuan data pribadi
-     * dipisahkan dari pengelolaan metadata (separation of duty).
+     * Administrator sengaja TIDAK memegang PrivacyReview, ConsumerApprove, maupun PiiReveal:
+     * persetujuan dipisahkan dari pengelolaan (separation of duty).
      *
      * @return list<PlatformPermission>
      */
@@ -45,12 +48,22 @@ enum SystemRole: string
                 PlatformPermission::AuditView,
                 PlatformPermission::MetadataManage,
                 PlatformPermission::MetadataPublish,
+                PlatformPermission::MasterDataView,
             ],
-            self::Auditor => [PlatformPermission::OrganizationView, PlatformPermission::AuditView],
+            self::Auditor => [PlatformPermission::OrganizationView, PlatformPermission::AuditView, PlatformPermission::MasterDataView],
             self::Dpo => [
                 PlatformPermission::OrganizationView,
                 PlatformPermission::AuditView,
                 PlatformPermission::PrivacyReview,
+            ],
+            // Walidata (Perpres 39/2019): pemilik master data dan gerbang pemakaian entity bersama.
+            // Terpisah dari admin platform: admin mengajukan, Walidata menyetujui.
+            self::DataSteward => [
+                PlatformPermission::OrganizationView,
+                PlatformPermission::MasterDataView,
+                PlatformPermission::MasterDataManage,
+                PlatformPermission::ConsumerApprove,
+                PlatformPermission::PiiReveal,
             ],
         };
     }

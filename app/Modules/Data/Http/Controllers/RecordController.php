@@ -212,7 +212,7 @@ final readonly class RecordController
         $term = $request->string('q')->squish()->limit(100, '')->toString();
 
         return response()->json([
-            'options' => mb_strlen($term) < RelationTargets::MIN_TERM_LENGTH ? [] : $this->targets->search($user, $target, $term),
+            'options' => mb_strlen($term) < RelationTargets::MIN_TERM_LENGTH ? [] : $this->targets->search($user, $schema->applicationId, $target, $term),
             'limit' => RelationTargets::SEARCH_LIMIT,
         ]);
     }

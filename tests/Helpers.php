@@ -130,3 +130,22 @@ function userWithAppRole(Application $application, string $roleCode, ?Organizati
 
     return $user;
 }
+
+/** Setujui aplikasi sebagai consumer entity bersama (ADR 0016), tanpa lewat UI. */
+function approveConsumer(Application $application, Entity|string $entity): void
+{
+    DB::table('entity_consumers')->upsert([[
+        'entity_id' => $entity instanceof Entity ? $entity->id : $entity,
+        'application_id' => $application->id,
+        'access' => 'reference',
+        'status' => 'approved',
+        'reason' => 'Disetujui untuk keperluan pengujian.',
+        'decided_at' => now(),
+    ]], ['entity_id', 'application_id'], ['status', 'decided_at']);
+}
+
+function coreEntityId(string $code): string
+{
+    return (string) DB::table('entities as e')->join('applications as a', 'a.id', '=', 'e.application_id')
+        ->where('a.code', 'core')->where('e.code', $code)->value('e.id');
+}

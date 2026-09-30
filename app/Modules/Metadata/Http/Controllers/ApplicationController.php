@@ -11,6 +11,7 @@ use App\Modules\Metadata\Actions\CreateApplication;
 use App\Modules\Metadata\Actions\UpdateApplication;
 use App\Modules\Metadata\Http\Presenters\MetadataPresenter;
 use App\Modules\Metadata\Http\Requests\ApplicationRequest;
+use App\Modules\Metadata\Infrastructure\ConsumerQueries;
 use App\Modules\Metadata\Models\Application;
 use App\Modules\Metadata\Models\Entity;
 use App\Modules\Organization\Contracts\OrganizationDirectory;
@@ -35,6 +36,7 @@ final readonly class ApplicationController
         private AccessChecker $access,
         private OrganizationDirectory $organizations,
         private MetadataPresenter $presenter,
+        private ConsumerQueries $consumers,
     ) {}
 
     public function index(Request $request): Response
@@ -95,6 +97,8 @@ final readonly class ApplicationController
                 'published_version' => $entity->publishedVersion?->version,
                 'draft_version' => $entity->draftVersion?->version,
             ])->all(),
+            'consumers' => $this->consumers->forApplication($application),
+            'consumable' => $user->can('update', $application) ? $this->consumers->consumable($application) : [],
             'can' => ['update' => $user->can('update', $application)],
         ]);
     }

@@ -1,15 +1,33 @@
-import { Head, Link, setLayoutProps } from '@inertiajs/react';
+import { Form, Head, Link, setLayoutProps } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 import ApplicationController from '@/actions/App/Modules/Metadata/Http/Controllers/ApplicationController';
+import ConsumerController from '@/actions/App/Modules/Metadata/Http/Controllers/ConsumerController';
 import EntityController from '@/actions/App/Modules/Metadata/Http/Controllers/EntityController';
+import { ConsumerTable } from '@/components/consumer-table';
+import { ErrorSummary } from '@/components/form/error-summary';
+import { Field } from '@/components/form/field';
+import { NativeSelect } from '@/components/form/native-select';
+import { Textarea } from '@/components/form/textarea';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import type { ApplicationSummary, EntitySummary } from '@/types';
+import type {
+    ApplicationSummary,
+    ConsumerRow,
+    EntitySummary,
+    Option,
+} from '@/types';
 
 type Props = {
     application: ApplicationSummary;
     entities: EntitySummary[];
+    consumers: ConsumerRow[];
+    consumable: Option[];
     can: { update: boolean };
+};
+
+const CONSUMER_LABELS = {
+    entity_id: 'Entity yang dipakai',
+    reason: 'Alasan pemakaian',
 };
 
 function versionText(entity: EntitySummary): string {
@@ -23,7 +41,13 @@ function versionText(entity: EntitySummary): string {
     return parts.join(', ') || '—';
 }
 
-export default function ShowApplication({ application, entities, can }: Props) {
+export default function ShowApplication({
+    application,
+    entities,
+    consumers,
+    consumable,
+    can,
+}: Props) {
     setLayoutProps({
         breadcrumbs: [
             { title: 'Aplikasi', href: ApplicationController.index() },
@@ -166,6 +190,103 @@ export default function ShowApplication({ application, entities, can }: Props) {
                                 </tbody>
                             </table>
                         </div>
+                    )}
+                </section>
+
+                <section
+                    aria-labelledby="consumers-title"
+                    className="space-y-3"
+                >
+                    <h2 id="consumers-title" className="text-lg font-semibold">
+                        Entity bersama yang dipakai
+                    </h2>
+                    <p className="max-w-3xl text-sm text-muted-foreground">
+                        Untuk merujuk entity milik aplikasi lain atau master
+                        data (wilayah, orang, pegawai, tahun anggaran,
+                        organisasi), ajukan pemakaian lalu tunggu persetujuan
+                        Walidata.
+                    </p>
+                    {consumers.length === 0 ? (
+                        <p className="rounded-lg border border-dashed p-6 text-center">
+                            Belum ada pengajuan.
+                        </p>
+                    ) : (
+                        <ConsumerTable
+                            rows={consumers}
+                            caption={`Pemakaian entity bersama oleh ${application.name}`}
+                        />
+                    )}
+
+                    {can.update && consumable.length > 0 && (
+                        <Form
+                            {...ConsumerController.store.form(application)}
+                            className="max-w-2xl space-y-4 rounded-lg border p-4"
+                            resetOnSuccess
+                            noValidate
+                        >
+                            {({ errors, processing }) => (
+                                <>
+                                    <h3 className="font-medium">
+                                        Ajukan pemakaian
+                                    </h3>
+                                    <ErrorSummary
+                                        errors={errors}
+                                        labels={CONSUMER_LABELS}
+                                    />
+                                    <Field
+                                        id="entity_id"
+                                        label={CONSUMER_LABELS.entity_id}
+                                        required
+                                        error={errors.entity_id}
+                                    >
+                                        {(aria) => (
+                                            <NativeSelect
+                                                {...aria}
+                                                name="entity_id"
+                                                defaultValue=""
+                                            >
+                                                <option value="" disabled>
+                                                    Pilih entity
+                                                </option>
+                                                {consumable.map((o) => (
+                                                    <option
+                                                        key={o.value}
+                                                        value={o.value}
+                                                    >
+                                                        {o.label}
+                                                    </option>
+                                                ))}
+                                            </NativeSelect>
+                                        )}
+                                    </Field>
+                                    <Field
+                                        id="reason"
+                                        label={CONSUMER_LABELS.reason}
+                                        required
+                                        hint="Jelaskan data apa yang akan dirujuk dan untuk apa (10–1000 karakter)."
+                                        error={errors.reason}
+                                    >
+                                        {(aria) => (
+                                            <Textarea
+                                                {...aria}
+                                                name="reason"
+                                                rows={3}
+                                                maxLength={1000}
+                                            />
+                                        )}
+                                    </Field>
+                                    <Button
+                                        type="submit"
+                                        disabled={processing}
+                                        className="min-h-11 md:min-h-9"
+                                    >
+                                        {processing
+                                            ? 'Mengirim…'
+                                            : 'Kirim pengajuan'}
+                                    </Button>
+                                </>
+                            )}
+                        </Form>
                     )}
                 </section>
             </div>

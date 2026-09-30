@@ -10,7 +10,7 @@ interface RelationshipTargets
 
     /**
      * Target yang boleh dipilih entity dalam aplikasi ini: entity satu aplikasi + entity bersama
-     * yang sudah terbit. (Pendaftaran consumer lintas aplikasi menyusul di M4.)
+     * yang sudah terbit dan aplikasi ini consumer yang disetujui (ADR 0016).
      *
      * @return list<RelationshipTarget>
      */

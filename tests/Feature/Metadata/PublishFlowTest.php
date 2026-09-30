@@ -129,12 +129,17 @@ test('relasi ke entity aplikasi lain yang tidak dibagikan ditolak', function ():
         ->toThrow(ValidationException::class);
 });
 
-test('relasi ke entity bersama (shared) dari aplikasi lain diizinkan', function (): void {
+test('relasi ke entity bersama (shared) dari aplikasi lain diizinkan setelah consumer disetujui', function (): void {
     $shared = createEntity(createApplication('bappeda'), 'program', shared: true);
     addField($shared, 'nama', 'string');
     publishEntity($shared);
 
-    $entity = createEntity(createApplication('monev'));
+    $monev = createApplication('monev');
+    $entity = createEntity($monev);
+    expect(fn () => addField($entity, 'program', 'relationship', ['target_entity_id' => $shared->id, 'cardinality' => 'many_to_one']))
+        ->toThrow(ValidationException::class, 'belum disetujui Walidata');
+
+    approveConsumer($monev, $shared);
     addField($entity, 'program', 'relationship', ['target_entity_id' => $shared->id, 'cardinality' => 'many_to_one']);
 
     expect(publishEntity($entity)->status)->toBe('published');
@@ -144,7 +149,9 @@ test('relasi ke Core.Organization (entity fisik bersama) diizinkan', function ()
     $orgEntityId = DB::table('entities')->where('code', 'organization')->value('id');
     DB::table('entities')->where('id', $orgEntityId)->update(['is_shared' => true]);
 
-    $entity = createEntity(createApplication('monev'));
+    $monev = createApplication('monev');
+    approveConsumer($monev, $orgEntityId);
+    $entity = createEntity($monev);
     addField($entity, 'opd', 'relationship', ['target_entity_id' => $orgEntityId, 'cardinality' => 'many_to_one']);
 
     expect(publishEntity($entity)->status)->toBe('published');

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Modules\Access\Contracts\AccessChecker;
+use App\Modules\Access\Contracts\PlatformPermission;
 use App\Modules\Metadata\Models\Application;
 use App\Modules\Organization\Models\Organization;
 use Illuminate\Http\Request;
@@ -20,6 +22,8 @@ class HandleInertiaRequests extends Middleware
      * @var string
      */
     protected $rootView = 'app';
+
+    public function __construct(private readonly AccessChecker $access) {}
 
     /**
      * Determines the current asset version.
@@ -56,6 +60,8 @@ class HandleInertiaRequests extends Middleware
                 'can' => [
                     'viewOrganizations' => $user !== null && $user->can('viewAny', Organization::class),
                     'viewApplications' => $user !== null && $user->can('viewAny', Application::class),
+                    'viewMasterData' => $user !== null && $this->access->hasAnywhere($user, PlatformPermission::MasterDataView),
+                    'approveConsumers' => $user !== null && $this->access->hasAnywhere($user, PlatformPermission::ConsumerApprove),
                 ],
             ],
             // Menit tanpa aktivitas sebelum sesi berakhir; UI memberi peringatan 2 menit sebelumnya.

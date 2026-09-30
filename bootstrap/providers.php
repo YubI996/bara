@@ -6,6 +6,7 @@ use App\Modules\Access\Providers\AccessServiceProvider;
 use App\Modules\Audit\Providers\AuditServiceProvider;
 use App\Modules\Data\Providers\DataServiceProvider;
 use App\Modules\Eventing\Providers\EventingServiceProvider;
+use App\Modules\MasterData\Providers\MasterDataServiceProvider;
 use App\Modules\Metadata\Providers\MetadataServiceProvider;
 use App\Modules\Organization\Providers\OrganizationServiceProvider;
 use App\Providers\AppServiceProvider;
@@ -19,5 +20,6 @@ return [
     AccessServiceProvider::class,
     DataServiceProvider::class,
     MetadataServiceProvider::class,
+    MasterDataServiceProvider::class,
     OrganizationServiceProvider::class,
 ];

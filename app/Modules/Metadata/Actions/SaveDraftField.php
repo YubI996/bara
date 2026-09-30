@@ -54,7 +54,11 @@ final readonly class SaveDraftField
                 $targetId = $result['config']['target_entity_id'] ?? null;
                 $allowed = array_map(static fn ($t): string => $t->id, $this->targets->selectableFor($entity->application_id));
                 if (! is_string($targetId) || ($targetId !== $entity->id && ! in_array($targetId, $allowed, true))) {
-                    $errors['config.target_entity_id'] = 'Pilih entity target yang sudah terbit, dalam aplikasi ini atau dibagikan (shared).';
+                    $target = is_string($targetId) ? $this->targets->find($targetId) : null;
+                    $errors['config.target_entity_id'] = $target !== null && $target->isShared && $target->isPublished
+                        && $target->applicationId !== $entity->application_id
+                        ? "Aplikasi ini belum disetujui Walidata sebagai pemakai {$target->label()}. Ajukan pemakaian di halaman aplikasi."
+                        : 'Pilih entity target yang sudah terbit, dalam aplikasi ini atau yang sudah disetujui untuk dipakai.';
                 }
             }
 

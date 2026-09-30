@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Metadata\Infrastructure;
 
+use App\Modules\Metadata\Contracts\ConsumerRegistry;
 use App\Modules\Metadata\Models\Entity;
 use App\Modules\Metadata\Schema\RelationshipTarget;
 use App\Modules\Metadata\Schema\RelationshipTargets;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
-final class EloquentRelationshipTargets implements RelationshipTargets
+final readonly class EloquentRelationshipTargets implements RelationshipTargets
 {
+    public function __construct(private ConsumerRegistry $consumers) {}
+
     public function find(string $entityId): ?RelationshipTarget
     {
         $entity = Str::isUuid($entityId) ? Entity::query()->with('application')->find($entityId) : null;
@@ -27,6 +30,8 @@ final class EloquentRelationshipTargets implements RelationshipTargets
             ->where(fn (Builder $q) => $q->whereNotNull('published_version_id')->orWhere('storage_type', 'physical'))
             ->orderBy('name')
             ->get()
+            // Lintas aplikasi hanya setelah consumer disetujui Walidata (ADR 0016).
+            ->filter(fn (Entity $entity): bool => $this->consumers->allows($applicationId, $entity->id))
             ->map(fn (Entity $entity): RelationshipTarget => $this->toTarget($entity))
             ->all());
     }

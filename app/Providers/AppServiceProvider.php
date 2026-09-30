@@ -30,7 +30,7 @@ class AppServiceProvider extends ServiceProvider
         // Migration dipisah per modul (docs/03 §4); urutan tetap mengikuti nama file.
         $this->loadMigrationsFrom(array_map(
             fn (string $module): string => database_path("migrations/{$module}"),
-            ['platform', 'identity', 'access', 'audit', 'eventing', 'metadata'],
+            ['platform', 'identity', 'access', 'audit', 'eventing', 'metadata', 'masterdata'],
         ));
     }
 

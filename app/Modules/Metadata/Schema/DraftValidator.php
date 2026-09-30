@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Metadata\Schema;
 
+use App\Modules\Metadata\Contracts\ConsumerRegistry;
 use App\Modules\Metadata\Contracts\FieldDefinition;
 use App\Shared\Data\DataClassification;
 
@@ -24,9 +25,13 @@ final readonly class DraftValidator
         'rekening', 'gaji', 'penghasilan', 'catatan kejahatan', 'orientasi', 'nama ibu',
     ];
 
+    /** Entity Core berisi data pribadi (ADR 0016). */
+    private const array PERSONAL_CORE_ENTITIES = ['person', 'employee'];
+
     public function __construct(
         private FieldConfigValidator $fieldValidator,
         private ChangeClassifier $classifier,
+        private ConsumerRegistry $consumers,
     ) {}
 
     /**
@@ -185,6 +190,13 @@ final readonly class DraftValidator
         }
         if ($target->applicationId !== $entity->applicationId && ! $target->isShared) {
             return "Entity {$target->label()} milik aplikasi lain dan tidak dibagikan (shared).";
+        }
+        if (! $this->consumers->allows($entity->applicationId, $target->id)) {
+            return "Aplikasi ini belum disetujui Walidata sebagai pemakai {$target->label()}. Ajukan pemakaian di halaman aplikasi.";
+        }
+        if ($target->applicationCode === 'core' && in_array($target->code, self::PERSONAL_CORE_ENTITIES, true)
+            && ! $field->classification->isPersonal()) {
+            return "Relasi ke {$target->label()} memuat data pribadi; klasifikasi field harus Data pribadi umum atau spesifik.";
         }
         if (! $target->isPublished) {
             return "Entity {$target->label()} belum pernah dipublikasikan.";

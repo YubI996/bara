@@ -26,7 +26,7 @@ final class AssignRole extends Command
     protected $description = 'Beri role kepada user pada scope unit organisasi (tercatat di audit + outbox)';
 
     /** Role platform yang membuka akses luas; pemberiannya harus disengaja (--force). */
-    private const array HIGH_RISK_ROLES = ['platform_admin', 'dpo'];
+    private const array HIGH_RISK_ROLES = ['platform_admin', 'dpo', 'data_steward'];
 
     public function handle(ConnectionInterface $db, AuditLogger $audit, EventRecorder $events): int
     {

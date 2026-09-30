@@ -97,7 +97,7 @@ describe('SEC-002/003 relasi', function (): void {
             ->assertInertia(fn (Assert $p) => $p->where('record.values.kegiatan.0.label', 'Kegiatan Tertutup'));
     });
 
-    test('relasi ke entity aplikasi lain tanpa permission view: opsi kosong dan id ditolak', function (): void {
+    test('relasi ke entity aplikasi lain tanpa permission view dan tanpa persetujuan consumer: kosong dan ditolak', function (): void {
         $sakip = createApplication('sakip');
         $sasaran = createEntity($sakip, 'sasaran', shared: true, titleTemplate: '{nama}');
         addField($sasaran, 'nama', 'string', required: true);
@@ -107,15 +107,20 @@ describe('SEC-002/003 relasi', function (): void {
             ->assertSessionHasNoErrors();
         $target = (string) DB::table('records')->where('title', 'Sasaran Internal')->value('id');
 
+        approveConsumer($this->monev, $sasaran);
         $capaian = createEntity($this->monev, 'capaian', titleTemplate: '{uraian}');
         addField($capaian, 'uraian', 'string', required: true);
         addField($capaian, 'sasaran', 'relationship', ['target_entity_id' => $sasaran->id, 'cardinality' => 'many_to_one']);
         publishEntity($capaian);
 
-        // Operator monev tanpa role di aplikasi sakip.
+        // Operator monev tanpa role di aplikasi sakip: selama consumer disetujui, target
+        // internal boleh dirujuk (ADR 0016); setelah dicabut, lapis 1 tidak lolos.
         $operator = userWithAppRole($this->monev, 'operator', $this->dinkes);
-        $this->actingAs($operator)->get(hardeningUrl('runtime.create', entity: 'capaian'))->assertOk()
-            ->assertInertia(fn (Assert $p) => $p->where('fields.1.options', []));
+        $lookup = hardeningUrl('runtime.lookup', ['field' => 'sasaran', 'q' => 'sasaran'], 'capaian');
+        $this->actingAs($operator)->getJson($lookup)->assertJsonCount(1, 'options');
+
+        DB::table('entity_consumers')->update(['status' => 'revoked']);
+        $this->actingAs($operator)->getJson($lookup)->assertJsonCount(0, 'options');
         $this->actingAs($operator)->post(hardeningUrl('runtime.store', entity: 'capaian'), ['owner_org_id' => $this->dinkes->id, 'data' => ['uraian' => 'X', 'sasaran' => $target]])
             ->assertSessionHasErrors('data.sasaran');
     });

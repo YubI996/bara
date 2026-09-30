@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Modules\Access\Contracts\PermissionRegistry;
 use App\Modules\Access\Contracts\SystemRole;
+use App\Modules\MasterData\Support\CoreEntities;
 use App\Shared\Validation\Identifier;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -91,6 +92,7 @@ final class PlatformBootstrapSeeder extends Seeder
             ]);
 
             app(PermissionRegistry::class)->syncSystemRoles();
+            app(CoreEntities::class)->sync();
             $adminRoleId = DB::table('roles')
                 ->where('code', SystemRole::PlatformAdmin->value)->whereNull('application_id')->value('id');
 

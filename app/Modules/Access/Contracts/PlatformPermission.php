@@ -13,6 +13,10 @@ enum PlatformPermission: string
     case MetadataManage = 'platform.metadata.manage';
     case MetadataPublish = 'platform.metadata.publish';
     case PrivacyReview = 'platform.privacy.review';
+    case MasterDataView = 'platform.masterdata.view';
+    case MasterDataManage = 'platform.masterdata.manage';
+    case ConsumerApprove = 'platform.consumer.approve';
+    case PiiReveal = 'platform.pii.reveal';
 
     public function description(): string
     {
@@ -23,6 +27,10 @@ enum PlatformPermission: string
             self::MetadataManage => 'Mengelola aplikasi, entity, dan draft field',
             self::MetadataPublish => 'Mempublikasikan versi entity',
             self::PrivacyReview => 'Menyetujui field berisi data pribadi (Pejabat PDP)',
+            self::MasterDataView => 'Melihat master data (wilayah, orang, pegawai, tahun anggaran)',
+            self::MasterDataManage => 'Mengelola master data (orang, pegawai, tahun anggaran, impor wilayah)',
+            self::ConsumerApprove => 'Menyetujui aplikasi pemakai entity bersama (Walidata)',
+            self::PiiReveal => 'Membuka NIK lengkap (tercatat pii.revealed)',
         };
     }
 }
